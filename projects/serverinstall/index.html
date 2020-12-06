@@ -10,6 +10,13 @@
 <body>
 	<h1>home server based on Ubuntu 20.04 with ZFS</h1>
 	<p>
+		Just as information:<br/>
+		Up to now this page is just a collection of what I do to setup
+		my server. Therefor the design of these pages is not nice. It's
+		more or less my reminder for what to do during a new
+		installation.
+	</p>
+	<p>
 		I am running a home server since many years.
 		Somewhere around 2018 I deciced to switch to a new server
 		using ZFS as filesystem. At that time I started with a
@@ -314,6 +321,187 @@
 		possible. There's only one partition with another file system.
 		The EFI partition must not be converted to ZFS. this one has
 		to stay on VFAT.
+	</p>
+
+	<h2>Small configuration issue</h2>
+	<p>
+		After the ubuntu installation process is finished we have a
+		clean installation waiting for further configuration. This is
+		mainly one thing I do not like:<br/>
+		There are icons for rpool and bpool on the desktop I want to
+		get rid of.
+	</p>
+	<p>
+		To get rid of these icons we have to enter two lines in<br/>
+		<code>/etc/fstab</code>
+	</p>
+	<p>
+		This file has to be editied with root rights. Just add the two
+		lines<br/>
+		<code>LABEL=rpool	none	auto	noauto	0	0</code><br/>
+		<code>LABEL=bpool	none	auto	noauto	0	0</code>
+	</p>
+	<p>
+		One thing I really like is the possibility to use pageup /
+		pagedown for searching the history. This is enabled in<br/>
+		<code>/etc/inputrc</code>
+	</p>
+	<p>
+		As last little config issue I disable the bluetooth service. It
+		usually crashes during boot and I don't have a bluetooth device
+		connected to the server.<br/>
+		<code>sudo systemctl disable bluetooth</code>
+	</p>
+
+	<h2>Configuration of suspend and hibernate</h2>
+	<p>
+		No the basics are done. We have a System booting from ZFS and
+		the desktop is clean.
+	</p>
+	<p>
+		The next step to do is the configuration of suspend to RAM and
+		suspend to disk.
+	</p>
+	<p>
+		To get supend, hibernate and a combination of both full
+		functional we just have to install one official ubuntu package:<br/>
+		<code>sudo apt install uswusp</code>
+	</p>
+	<p>
+		Having this package installed there is nothing to say against a
+		test of suspend to ram, disk or both.
+	</p>
+	<p>
+		To test suspend to RAM execute the command<br/>
+		<code>sudo s2ram</code>
+	</p>
+	<p>
+		If everything is fine the system shuts down very fast.
+		At least my system wakes up with hitting any key on the
+		keyboard. Everything is fine if you don't get the regular login
+		but the screen saver password request.
+	</p>
+	<p>
+		Next try is suspend to disk. The command for doing that is<br/>
+		<code>sudo s2disk</code>
+	</p>
+	<p>
+		In this case shuting down needs a bit more time and the system
+		prints additional information on the screen where the image is
+		stored and how large it is. On boot it takes the bios time,
+		then loads the image and again there should be the screensaver
+		password request. If you get the regular login screen something
+		went wrong.
+	</p>
+	<p>
+		Last test for me is testing if the combination suspend to RAM
+		and to disk is also working fine. The related command is<br/>
+		<code>sudo s2both</code>
+	</p>
+	<p>
+		After this the shut down looks simular as in s2disk. Shutting
+		down needs the same time as in s2disk. But as long as you don't
+		pull the power cord the system will start up in the same time
+		as with s2disk.<br/>
+		<em>If</em> you pull the power cord and plug it again the system
+		will again recover in the same state where you entered s2both.
+	</p>
+	<p>
+		to have this as a sensefull feature you have to setup your BIOS
+		in the way that after power loss the computer starts up. In most
+		cases the default for this setting is "keep it off".
+	</p>
+
+	<h2>Configuration of Wake On Lan</h2>
+	<p>
+		As already explained in the prerequesites the Atheros AR8171 in
+		principle supports Wake On Lan, but it is completely disabled
+		in the ubuntu standard installation. So we're going to activate
+		it now.
+	</p>
+	<p>
+		First thing to do is to install ethtool:<br/>
+		<code>sudo apt install ethtool</code>
+	</p>
+	<p>
+		Now we need to know which interface we want to configure:<br/>
+		<code>ip link</code><br/>
+		We identify the interface, in my case this is <code>enp2s0</code>
+	</p>
+	<p>
+		Next step is to check the supported wake on lan modes and the
+		actually configured ones:<br/>
+		<code>sudo ethtool enp2s0 | grep Wake-on</code>
+	</p>
+	<p>
+		On my server hardware this reports:<br/>
+		<code>Supports Wake-on: d</code><br/>
+		<code>Wake-on: d</code><br/>
+	</p>
+	<p>
+		This is sad, because this means: No Wake On Lan supported ...<br/>
+		<em>But:</em> the driver supports WOL, it just has to be
+		enabled. This is done by an additional kernel command line
+		parameter.
+	</p>
+	<p>
+		To get WOL working on the Atheros AR8171 the kernel requires
+		the additional commandline paramter <code>alx.enable_wol=1</code>.
+		To add this parameter edit the file <code>/etc/default/grub</code>
+		with root rights. Here you find a line<br/>
+		<code>GRUB_CMDLINE_LINUX_DEFAULT="&lt;some_parameters&gt;"</code>
+	</p>
+	<p>
+		in this line add <code>alx.enable_wol=1</code> with  leading
+		blank in front of the second quotation mark. After doing that
+		execute the command<br/>
+		<code>sudo update-grub</code><br/>
+		to overtake the change.
+	</p>
+	<p>
+		Now execute a reboot, open a terminal and try the command<br/>
+		<code>sudo ethtool enp2s0 | grep Wake-on</code><br/>
+		again.
+	</p>
+	<p>
+		The new result is:<br>
+		<code>Supports Wake-on: pg</code><br/>
+		<code>Wake-on: pg</code><br/>
+	</p>
+	<p>
+		So now Wake On Lan is activated on
+		<ul>
+			<li>phy activity</li>
+			<li>MagicPacket</li>
+		</ul>
+		I don't like phy activity waking up my system, so I have to
+		use ethtool to change that behavior. Chaninging it in the
+		commandline will be lost after reboot, therefore I add a task
+		in systemd.
+	</p>
+	<p>
+		To create that service create the file<br/>
+		<code>/etc/systemd/system/wol.service</code><br/>
+		with root rights. This file has to contain:
+<pre>
+[Unit]
+Description=Configure Wake-up on LAN
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/ethtool -s enp2s0 wol g
+
+[Install]
+WantedBy=basic.target
+</pre>
+		Then enable the service with<br/>
+		<code>sudo systemctl enable wol.service</code>
+	</p>
+	<p>
+		After a reboot ethtool reports<br/>
+		<code>Supports Wake-on: pg</code><br/>
+		<code>Wake-on: g</code><br/>
+		<em>This</em> is what we want to get.
 	</p>
 </body>
 </html>
