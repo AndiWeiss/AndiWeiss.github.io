@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>home server based on Ubuntu 20.04 with ZFS</title>
+	<meta name="Ubuntu home server" content="home server based on Ubuntu 20.04 with ZFS">
+<!--	<link href="../../design.css" rel="stylesheet">-->
+</head>
+
+<body>
+	<h1>home server based on Ubuntu 20.04 with ZFS</h1>
+	<p>
+		I am running a home server since many years.
+		Somewhere around 2018 I deciced to switch to a new server
+		using ZFS as filesystem. At that time I started with a
+		combination of several howtos I found in the internet. That
+		was a lot of work and I have no chance to list all of the
+		sources as each of them only solved one step of the whole
+		story.
+	</p>
+
+	<p>
+		Now, beginning with Ubuntu 20.04, Canonical added
+		(experimental) support of Ubuntu installation on ZFS. Therefore
+		I decided to do a clean new installation of my server.
+		Additionally I decided to create a documentation of each step I
+		do - maybe it is usefull for other people, too
+	</p>
+
+	<p>
+		So just feel free to follow my steps.
+	</p>
+
+	<h2>Preconditions</h2>
+	<p>
+		I don't want to use new hardware, but I have available:
+	</p>
+	<ul>
+		<li>Mainboard: ASROCK B85M-ITX</li>
+		<li>Pentium G3440T</li>
+		<li>128G SSD for booting</li>
+		<li>4 harddisks as raid for data</li>
+	</ul>
+	<p>
+		I personally prefer xubuntu, so I also need a bootable xubuntu
+		20.04 USB stick.
+	</p>
+
+	<h3>work in progress</h3>
+	<p>
+		The mainboard provides four SATA ports and an ESATA port. My
+		actually running server has the SSD connected to the ESATA port.
+		In the future I want to free the ESATA port again. Therefore
+		I have two possibilities:
+	</p>
+	<ul>
+		<li>use an already available USB3 to SATA converter</li>
+		<li>buy a PCIE SATA controller</li>
+	</ul>
+	<p>
+		I do the actual tries with the USB3 adapter - just because I
+		have it available. Up to now I face no differnce between having
+		the	SSD connected to SATA or to USB - the installation process
+		is the same.
+	</p>
+
+	<p>
+		Actually I'm setting up the new environment so the whole thing
+		is work in progress.
+	</p>
+
+	<h3>Things to know</h3>
+	<p>Just to point it out:</p>
+	<ul>
+		<li>
+			I know that having the boot data not on the redundant
+			system leads to non accessable data in the case the boot
+			device fails or gets corrupted. But I prefer having a fast
+			boot process and in the situation of a failing device I
+			have to do a desaster recovery of the boot device.
+		</li>
+		<li>
+			I also know that booting from USB is not as relaiable than
+			booting	from a SATA device. It may happen that I buy a PCIE
+			SATA adapter to solve this issue.
+		</li>
+		<li>
+			Additionally I also know that the used mainboard doesn't
+			support ECC RAM and therefore is not as reliable as a
+			professional server. But hey, this is a home server,
+			not a professional one.
+		</li>
+	</ul>
+
+	<h2>Requirements</h2>
+	<ul>
+		<li>
+			In normal case the server shall be off. I don't like current
+			consumption when it is not in use.
+		</li>
+		<li>
+			On request it shall be available FAST. So I want to use
+			suspend to RAM.
+		</li>
+		<li>
+			On power fail everything shall work smooth, so suspend to
+			RAM is not enough - the shutdown has to do a disk image,
+			too.
+		</li>
+		<li>
+			The system has to provide Wake On Lan - I don't want to
+			push the button.
+		</li>
+		<li>
+			The supension shall be done automatically after some
+			minutes of idletime
+		</li>
+	</ul>
+
+	<h2>Already known issues</h2>
+	<ul>
+		<li>
+			(solved) during ubuntu 20.04 installation there is no
+			possibility to define the partition layout or to create
+			data pools with redundancy
+		</li>
+		<li>
+			(solved) the mainboard is equipped with a Qualcomm Atheros
+			AR8171 gigabit ethernet chip. This chip supports Wake On
+			Lan, but you have to tweak the linux system to enable it
+		</li>
+		<li>
+			(solved) the ubuntu partitioning when using the
+			installation on ZFS creates a 2G swap partition. This is
+			not large enough for suspend to disk
+		</li>
+	</ul>
+
+	<h2>Creating the USB boot medium</h2>
+	<p>
+		I propose to use <a href="www.ventoy.net">Ventoy</a>. It's
+		available for Linux and Windows.<br/>
+		This page explains the usage of ventoy under linux.<br/>
+		Usage under Windows is explained on the website.<br/>
+		The configuration of the stick content is identical.
+	</p>
+
+	<h3>Download ventoy</h3>
+	<p>
+		Download the tool here:<br/>
+		<a href="https://github.com/ventoy/Ventoy/releases">Ventoy download from Github</a><br/>
+		You'll get a file "ventoy-x.y.z-linux.tar.gz" with x, y, and z
+		digits for the version.
+	</p>
+	<p>
+		Optional: check the SHA256 against the value given on the
+		website.<br/>
+		<code>sha256sum ventoy-x.y.z-linux.tar.gz</code><br/>
+		and compare the value.<br/>
+		don't forget to use the <em>real</em> filename
+	</p>
+	<p>
+		Extract the file with the command<br/>
+		<code>tar -xaf ventoy-x.y.z-linux.tar.gz</code><br/>
+		don't forget to use the <em>real</em> filename
+	</p>
+
+	<h3>Create bootable USB stick</h3>
+	<p>
+		cd into the extracted directory<br/>
+		<code>cd ventoy-x.y.z</code><br/>
+		don't forget to use the <em>real</em> directory name
+	</p>
+	<p>
+		Insert an USB stick with enough space for the ubuntu iso file
+		plus a file for persistent data. I recommend to use a stick
+		with at least 8GB.<br/>
+	</p>
+	<p>
+		run ventroy with the command<br/>
+		<code>sudo sh Ventoy2Disk.sh -I /dev/XXX</code><br/>
+		Replace XXX by the device name of your USB stick.
+	</p>
+	<p>
+		Your computer will remount the stick and show one partition
+		named<br/>
+		<code>ventoy</code>
+	</p>
+	<p>
+		Copy your ubuntu iso file on this USB stick.<br/>
+		Now the stick is bootable, but we need the possibility to
+		modify files on the stick persistent.
+	</p>
+
+	<h3>Create persistent data area on the stick</h3>
+	<p>
+		ventoy contains a plugin for persistent data creation on
+		bootable USB sticks. To prapare this execute the command<br/>
+		<code>sudo sh CreatePersistentImg.sh -s 1024 -t ext4 -l casper-rw</code>
+	</p>
+	<p>
+		This creates a file <code>persistence.dat</code> in your actual
+		directory.<br/>
+		Copy the file on the stick.
+	</p>
+	<p>
+		Now we have to tell ventoy to use this persistence file for
+		booting ubuntu.<br/>
+		To do so create a directory <code>ventoy</code>
+		on the USB stick.
+	</p>
+	<p>
+		Create a file <code>ventoy.json</code> in this directory.<br/>
+		Content of this file has to be:
+	</p>
+	<pre>
+{
+    "persistence": [
+        {
+            "image": "/xubuntu-20.04.1-desktop-amd64.iso",
+            "backend": "/persistence.dat",
+            "autosel": 1
+        }
+    ]
+}
+	</pre>
+	<p>
+		You can adapt the file names to your needs. It's also possible
+		to rename <code>persistence.dat</code>, in that case use the
+		new filename in <code>ventoy.json</code>, too.
+	</p>
+
+	<h3>Preparing the partitioning script on the boot medium</h3>
+	<p>
+		As mentioned above the default partitioning script of the
+		ubuntu installation medium creates a swap partition of 2G.
+		If the system shall do suspend to disk the swap partition is
+		used to store the complete RAM content. Knowing this leads to
+		the conclusion that 2G is - in most case - much to small.
+	</p>
+	<p>
+		As solution I first do a modification on the USB stick. The
+		stick creation process explained above leads to a persistent
+		storage in that boot system. So I boot the live stick and
+		change the required file. Since then this modified file is used
+		for partitioning.
+	</p>
+	<p>
+		After booting your future server system from the USB stick
+		with "Try without installation" edit the file<br/>
+		<code>/usr/share/ubiquity/zsys-setup</code><br/>
+		with root rights. If you are familar with vi you can use<br/>
+		<code>sudo vi x/upper/usr/share/ubiquity/zsys-setup</code>
+	</p>
+	<p>
+		In this file you'll find the lines<br/>
+		<code># Convert to MiB to align the size on the size of a block</code><br/>
+		<code>SWAPVOLSIZE=$(( SWAPSIZE / 1024 / 1024 ))</code><br/>
+	</p>
+	<p>
+		This value is handed over to the format subroutine. It is a
+		value in MB (1024 * 1024 byte). Instead of using the more or
+		less hard coded value based on <code>SWAPSIZE</code> I change
+		that to the size of the RAM on the board + 1GB.
+	</p>
+	<p>
+		So exchange the lines by<br/>
+		<code># get RAM size</code><br/>
+		<code>SWAPVOLSIZE=$(cat /proc/meminfo | grep MemTotal: | sed -n 's|^[^:]*:\W*\([0-9]*\).*|\1|p')</code><br/>
+		<code># do alignent to one more GB</code><br/>
+		<code>SWAPVOLSIZE=$(( (($SWAPVOLSIZE / 1024) + 1023 + 1024) & 0xffffc00 ))</code><br/>
+	</p>
+	<p>
+		After saving this change the stick is prepared for installation.
+		You can start the installation either with a new boot or without
+		rebooting by using the install ubuntu button.
+	</p>
+	<p>
+		If you regulary work in Linux it's easy to have a look on that
+		file on another linux machine. After saving that file in the
+		life system shut down the life system and connect the USB stick
+		to your working linux system. In a default environment your
+		system will mount the stick under <code>/media/&lt;user&gt;/ventoy</code>
+	</p>
+	<p>
+		create a directory for temporary mount of the persitence file<br/>
+		<code>mkdir pers</code>
+	</p>
+	<p>
+		Now mount the persistence file<br/>
+		<code>sudo mount /dev/media/&lt;user&gt;/ventoy/persistence.dat</code><br/>
+		In the case that you have chosen a different filename use that one.
+	</p>
+	<p>
+		Now you have access to your modified zsys-setup. You find it in<br/>
+		<code>pers/upper/usr/share/ubiquity/zsys-setup</code>
+	</p>
+
+	<h2>Starting the installation</h2>
+	<p>
+		I recommend to do the installation with only the boot drive
+		connected. After the installation the regular ZFS mechanisms
+		can be used very easily to create a raid data pool and move
+		the little amount of initial data on that new created pool.
+	</p>
+	<p>
+		In the Window "Installation type" you have to chose "Advanced
+		Features ...". In the now opened window select "EXPERIMENTAL:
+		Erase disk and use ZFS"
+	</p>
+	<p>
+		Now let the installer do its work. After that you'll have an
+		ubuntu system on one hard disk using ZFS wherever it is
+		possible. There's only one partition with another file system.
+		The EFI partition must not be converted to ZFS. this one has
+		to stay on VFAT.
+	</p>
+</body>
+</html>
