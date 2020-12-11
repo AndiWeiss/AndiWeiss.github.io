@@ -69,6 +69,12 @@
 		have it available. Up to now I face no differnce between having
 		the	SSD connected to SATA or to USB - the installation process
 		is the same.
+	<p><h4>News about this point</h4>
+	</p>
+		I found a pretty nice SATA controller for my needs:<br/>
+		<a href="https://www.delock.de/produkt/90396/merkmale.html">PCIe card 4 sata plus M.2</a><br/>
+		It's already ordered and I'll write my experience here.<br/>
+		Having in mind that I own a second housing with 4 hard disc slots this opens even more possibilities :-)
 	</p>
 
 	<p>
@@ -254,43 +260,56 @@
 	</p>
 	<p>
 		After booting your future server system from the USB stick
-		with "Try without installation" edit the file<br/>
+		with "Try without installation" patch the file<br/>
 		<code>/usr/share/ubiquity/zsys-setup</code><br/>
-		with root rights. If you are familar with vi you can use<br/>
-		<code>sudo vi x/upper/usr/share/ubiquity/zsys-setup</code>
+		with root rights using this patch file:
+		<a href="zsys-setup.patch">zsys-setup.patch</a>
 	</p>
 	<p>
-		In this file you'll find the lines<br/>
-		<code># Convert to MiB to align the size on the size of a block</code><br/>
-		<code>SWAPVOLSIZE=$(( SWAPSIZE / 1024 / 1024 ))</code><br/>
+		to patch the file open a terminal and type<br/>
+		<code>wget https://Andiweiss.github.io/projects/serverinstall/zsys-setup.patch</code><br/>
+		<code>cd /usr/share/ubiquity</code><br/>
+		<code>sudo patch -p1 /home/xubuntu/zsys-setup.patch</code>
 	</p>
 	<p>
-		This value is handed over to the format subroutine. It is a
-		value in MB (1024 * 1024 byte). Instead of using the more or
-		less hard coded value based on <code>SWAPSIZE</code> I change
-		that to the size of the RAM on the board + 1GB.
+		This patch modifies the zfs initialization script in a way that
+		an additional zfs pool with the name "tank" is created.
+		This tank will be used to create the directories<br/>
+		<code>/home /srv /var/www</code>
 	</p>
 	<p>
-		So exchange the lines by<br/>
-		<code># get RAM size</code><br/>
-		<code>SWAPVOLSIZE=$(cat /proc/meminfo | grep MemTotal: | sed -n 's|^[^:]*:\W*\([0-9]*\).*|\1|p')</code><br/>
-		<code># do alignent to one more GB</code><br/>
-		<code>SWAPVOLSIZE=$(( (($SWAPVOLSIZE / 1024) + 1023 + 1024) & 0xffffc00 ))</code><br/>
+		After applying the patch there are two new lines near the top:<br/>
+		<code>TANKDEVICES="..."</code><br/>
+		<code>TANKMODE=""</code><br/>
+		In <code>TANKDEVICES</code> you can add a list of hard disks or
+		partitions whih shall be used for that data tank.<br/>
+		In <code>TANKMODE</code> you have to define how these devices
+		shall be combined. Here you can either leave the variable empty
+		or use <code>mirror</code>, <code>raidz</code> or <code>raidz2</code>.
+	</p>
+	<p>
+		Please check the zfs documentation what these modes do.
+	</p>
+	<p>
+		Recommendation for the device list:<br/>
+		<em>DO NOT</em> use <code>/dev/sd?</code><br/> here.
+		Use <code>/dev/disk/by-id</code> or any other of these by-*
+		directories - whatever fits your usage.
 	</p>
 	<p>
 		After saving this change the stick is prepared for installation.
 		You can start the installation either with a new boot or without
-		rebooting by using the install ubuntu button.
+		rebooting by using the install ubuntu icon.
 	</p>
 	<p>
 		If you regulary work in Linux it's easy to have a look on that
-		file on another linux machine. After saving that file in the
+		file on another linux machine. After saving the file in the
 		life system shut down the life system and connect the USB stick
 		to your working linux system. In a default environment your
 		system will mount the stick under <code>/media/&lt;user&gt;/ventoy</code>
 	</p>
 	<p>
-		create a directory for temporary mount of the persitence file<br/>
+		create a directory for temporary mounting of the persitence file<br/>
 		<code>mkdir pers</code>
 	</p>
 	<p>
@@ -305,25 +324,24 @@
 
 	<h2>Starting the installation</h2>
 	<p>
-		I recommend to do the installation with only the boot drive
-		connected. After the installation the regular ZFS mechanisms
-		can be used very easily to create a raid data pool and move
-		the little amount of initial data on that new created pool.
+		Do the installation in the regular way. Just keep care for one
+		Window:
 	</p>
 	<p>
 		In the Window "Installation type" you have to chose "Advanced
 		Features ...". In the now opened window select "EXPERIMENTAL:
-		Erase disk and use ZFS"
+		Erase disk and use ZFS". Then select the device you want to boot
+		from.
 	</p>
 	<p>
 		Now let the installer do its work. After that you'll have an
 		ubuntu system on one hard disk using ZFS wherever it is
 		possible. There's only one partition with another file system.
-		The EFI partition must not be converted to ZFS. this one has
+		The EFI partition must not be converted to ZFS. This one has
 		to stay on VFAT.
 	</p>
 
-	<h2>Small configuration issue</h2>
+	<h2>Small configuration issues</h2>
 	<p>
 		After the ubuntu installation process is finished we have a
 		clean installation waiting for further configuration. This is
@@ -355,7 +373,7 @@
 
 	<h2>Configuration of suspend and hibernate</h2>
 	<p>
-		No the basics are done. We have a System booting from ZFS and
+		No the basics are done. We have a system booting from ZFS and
 		the desktop is clean.
 	</p>
 	<p>
@@ -365,7 +383,7 @@
 	<p>
 		To get supend, hibernate and a combination of both full
 		functional we just have to install one official ubuntu package:<br/>
-		<code>sudo apt install uswusp</code>
+		<code>sudo apt install uswsusp</code>
 	</p>
 	<p>
 		Having this package installed there is nothing to say against a

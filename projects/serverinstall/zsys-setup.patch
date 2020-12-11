@@ -1,0 +1,160 @@
+--- a/zsys-setup	2020-12-09 18:23:51.494450002 +0100
++++ b/zsys-setup	2020-12-09 18:46:09.438848739 +0100
+@@ -1,5 +1,18 @@
+ #!/bin/sh
+ 
++# recommendation:
++# DO NOT use /dev/sd?
++# use /dev/disk/by-<whatever> instead
++TANKDEVICES="/dev/disk/by-id/ata-ST3750528AS_6VP1N018"
++
++# This is
++# - "" for a single disk or a stripe group
++#   (no redundancy!)
++# - "mirror" for mirrored disks
++# - "raidz" for similar to raid5
++# - "raidz2" for similar to raid5 but dual parity
++TANKMODE=""
++
+ #
+ # This script creates ZFS pools and dataset compatible with zsys
+ #
+@@ -329,6 +342,20 @@
+ 		-O sync=disabled \
+ 		-O mountpoint=/ -R "${target}" rpool "${partrpool}"
+ 
++	# tank
++	zpool create -f \
++		-o ashift=12 \
++		-o autotrim=on \
++		-O compression=lz4 \
++		-O acltype=posixacl \
++		-O xattr=sa \
++		-O relatime=on \
++		-O normalization=formD \
++		-O canmount=off \
++		-O dnodesize=auto \
++		-O sync=disabled \
++		-O mountpoint=none -R "${target}" tank ${TANKMODE} ${TANKDEVICES}
++
+ 	# bpool
+ 	# The version of bpool is set to the default version to prevent users from upgrading
+ 	# Then only features supported by grub are enabled.
+@@ -358,12 +385,18 @@
+ 
+ 	# Root and boot dataset
+ 	zfs create rpool/ROOT -o canmount=off -o mountpoint=none
++	# we want to have some parts of ROOT on the tank
++	zfs create tank/ROOT -o canmount=off -o mountpoint=none
+ 	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}" -o mountpoint=/
++	# and keep the things as in the original config
++	zfs create "tank/ROOT/ubuntu_${UUID_ORIG}" -o mountpoint=/
+ 	zfs create bpool/BOOT -o canmount=off -o mountpoint=none
+ 	zfs create "bpool/BOOT/ubuntu_${UUID_ORIG}" -o mountpoint=/boot
+ 
+ 	# System dataset
+ 	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/var" -o canmount=off
++	# want to have parts of /var on the tank
++	zfs create "tank/ROOT/ubuntu_${UUID_ORIG}/var" -o canmount=off
+ 	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/var/lib"
+ 	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/var/lib/AccountsService"
+ 	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/var/lib/apt"
+@@ -371,7 +404,9 @@
+ 	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/var/lib/NetworkManager"
+ 
+ 	# Desktop specific system dataset
+-	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/srv"
++	# /srv shall be on the tank
++#	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/srv"
++	zfs create "tank/ROOT/ubuntu_${UUID_ORIG}/srv"
+ 	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/usr" -o canmount=off
+ 	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/usr/local"
+ 	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/var/games"
+@@ -379,18 +414,28 @@
+ 	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/var/mail"
+ 	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/var/snap"
+ 	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/var/spool"
+-	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/var/www"
++	# /var/www shall be on the tank
++#	zfs create "rpool/ROOT/ubuntu_${UUID_ORIG}/var/www"
++	zfs create "tank/ROOT/ubuntu_${UUID_ORIG}/var/www"
+ 
+ 	# USERDATA datasets
+ 	# Dataset associated to the user are created by the installer.
+-	zfs create rpool/USERDATA -o canmount=off -o mountpoint=/
++	# USERDATA shall be completely on the tank
++#	zfs create rpool/USERDATA -o canmount=off -o mountpoint=/
++	zfs create tank/USERDATA -o canmount=off -o mountpoint=/
+ 
+ 	# Set zsys properties
+ 	zfs set com.ubuntu.zsys:bootfs='yes' "rpool/ROOT/ubuntu_${UUID_ORIG}"
+ 	zfs set com.ubuntu.zsys:last-used=$(date +%s) "rpool/ROOT/ubuntu_${UUID_ORIG}"
+-	zfs set com.ubuntu.zsys:bootfs='no' "rpool/ROOT/ubuntu_${UUID_ORIG}/srv"
++	# same properties for tank/ROOT/ubuntu_... as used for rpool/ROOT/ubuntu_...
++	zfs set com.ubuntu.zsys:last-used=$(date +%s) "tank/ROOT/ubuntu_${UUID_ORIG}"
++	# /srv is on tank in our config
++#	zfs set com.ubuntu.zsys:bootfs='no' "rpool/ROOT/ubuntu_${UUID_ORIG}/srv"
++	zfs set com.ubuntu.zsys:bootfs='no' "tank/ROOT/ubuntu_${UUID_ORIG}/srv"
+ 	zfs set com.ubuntu.zsys:bootfs='no' "rpool/ROOT/ubuntu_${UUID_ORIG}/usr"
+ 	zfs set com.ubuntu.zsys:bootfs='no' "rpool/ROOT/ubuntu_${UUID_ORIG}/var"
++	# same properties for tank/ROOT/ubuntu_.../var as used for rpool/ROOT/ubuntu_.../var
++	zfs set com.ubuntu.zsys:bootfs='no' "tank/ROOT/ubuntu_${UUID_ORIG}/var"
+ }
+ 
+ move_user () {
+@@ -401,11 +446,15 @@
+ 
+ 	echo "I: Creating user $user with home $userhome"
+ 	mv "${target}/${userhome}" "${target}/tmp/home/${user}"
+-	zfs create "rpool/USERDATA/${user}_${uuid}" -o canmount=on -o mountpoint=${userhome}
++	# want to have the home dirs on the tank
++#	zfs create "rpool/USERDATA/${user}_${uuid}" -o canmount=on -o mountpoint=${userhome}
++	zfs create "tank/USERDATA/${user}_${uuid}" -o canmount=on -o mountpoint=${userhome}
+ 	chown $(chroot "${target}" id -u ${user}):$(chroot ${target} id -g ${user}) "${target}/${userhome}"
+ 	rsync -a "${target}/tmp/home/${user}/" "${target}/${userhome}"
+ 	bootfsdataset=$(grep "\s${target}\s" /proc/mounts | awk '{ print $1 }')
+-	zfs set com.ubuntu.zsys:bootfs-datasets="${bootfsdataset}" rpool/USERDATA/${user}_${UUID_ORIG}
++	# another point for homedirs on tank
++#	zfs set com.ubuntu.zsys:bootfs-datasets="${bootfsdataset}" rpool/USERDATA/${user}_${UUID_ORIG}
++	zfs set com.ubuntu.zsys:bootfs-datasets="${bootfsdataset}" tank/USERDATA/${user}_${UUID_ORIG}
+ }
+ 
+ init_system_partitions() {
+@@ -500,7 +549,13 @@
+ 		swapoff "${SWAPFILE}"
+ 	fi
+ 	# Convert to MiB to align the size on the size of a block
+-	SWAPVOLSIZE=$(( SWAPSIZE / 1024 / 1024 ))
++	# for suspend to disk we need a swap partition as large as the mounted RAM
++	# SWAPVOLSIZE=$(( SWAPSIZE / 1024 / 1024 ))
++	# get RAM size
++	SWAPVOLSIZE=$(cat /proc/meminfo | grep MemTotal: | sed -n 's|^[^:]*:\W*\([0-9]*\).*|\1|p')
++	echo "Test: >$SWAPVOLSIZE<" > /home/xubuntu/test.txt
++	# do alignent to GB boarder
++	SWAPVOLSIZE=$(( (($SWAPVOLSIZE / 1024) + 1023) & 0xffffc00 ))
+ 
+ 	prepare_target "${TARGET}"
+ 	format_disk "${DISK}" "${PARTBASE}" "${PARTESP}" "${PARTBPOOL}" "${PARTRPOOL}" "${SWAPVOLSIZE}"
+@@ -555,9 +610,12 @@
+ 	# Create zpool cache
+ 	zpool set cachefile= bpool
+ 	zpool set cachefile= rpool
++	# take tank into account
++	zpool set cachefile= tank
+ 	cp /etc/zfs/zpool.cache "${TARGET}/etc/zfs/"
+ 	mkdir -p "${TARGET}/etc/zfs/zfs-list.cache"
+-	touch "${TARGET}/etc/zfs/zfs-list.cache/bpool" "${TARGET}/etc/zfs/zfs-list.cache/rpool"
++	# another point where tank should be mentioned
++	touch "${TARGET}/etc/zfs/zfs-list.cache/bpool" "${TARGET}/etc/zfs/zfs-list.cache/rpool" "${TARGET}/etc/zfs/zfs-list.cache/tank"
+ 
+ 	# Handle userdata
+ 	UUID_ORIG=$(head -100 /dev/urandom | tr -dc 'a-z0-9' |head -c6)
+@@ -573,6 +631,8 @@
+ 
+ 	echo "I: Changing sync mode of rpool to standard"
+ 	zfs set sync=standard rpool
++	# and don't forget tank here, it shall behave in the same way than rpool
++	zfs set sync=standard tank
+ 
+ 	echo "I: ZFS setup complete"
+ else
