@@ -9,498 +9,499 @@
 
 <body>
 	<h1>home server based on Ubuntu 20.04 with ZFS</h1>
-	<p>
-		Just as information:<br/>
-		Up to now this page is just a collection of what I do to setup
-		my server. Therefor the design of these pages is not nice. It's
-		more or less my reminder for what to do during a new
-		installation.
-	</p>
-	<p>
-		I am running a home server since many years.
-		Somewhere around 2018 I deciced to switch to a new server
-		using ZFS as filesystem. At that time I started with a
-		combination of several howtos I found in the internet. That
-		was a lot of work and I have no chance to list all of the
-		sources as each of them only solved one step of the whole
-		story.
-	</p>
+		<p>
+			Just as information:<br/>
+			Up to now this page is just a collection of what I do to setup
+			my server. Therefor the design of these pages is not nice. It's
+			more or less my reminder for what to do during a new
+			installation.
+		</p>
+		<p>
+			I am running a home server since many years.
+			Somewhere around 2018 I deciced to switch to a new server
+			using ZFS as filesystem. At that time I started with a
+			combination of several howtos I found in the internet. That
+			was a lot of work and I have no chance to list all of the
+			sources as each of them only solved one step of the whole
+			story.
+		</p>
 
-	<p>
-		Now, beginning with Ubuntu 20.04, Canonical added
-		(experimental) support of Ubuntu installation on ZFS. Therefore
-		I decided to do a clean new installation of my server.
-		Additionally I decided to create a documentation of each step I
-		do - maybe it is usefull for other people, too
-	</p>
+		<p>
+			Now, beginning with Ubuntu 20.04, Canonical added
+			(experimental) support of Ubuntu installation on ZFS. Therefore
+			I decided to do a clean new installation of my server.
+			Additionally I decided to create a documentation of each step I
+			do - maybe it is usefull for other people, too
+		</p>
 
-	<p>
-		So just feel free to follow my steps.
-	</p>
+		<p>
+			So just feel free to follow my steps.
+		</p>
 
-	<h2>Preconditions</h2>
-	<p>
-		I don't want to use new hardware, but I have available:
-	</p>
-	<ul>
-		<li>Mainboard: ASROCK B85M-ITX</li>
-		<li>Pentium G3440T</li>
-		<li>128G SSD for booting</li>
-		<li>4 harddisks as raid for data</li>
-	</ul>
-	<p>
-		I personally prefer xubuntu, so I also need a bootable xubuntu
-		20.04 USB stick.
-	</p>
+		<h2>Preconditions</h2>
+			<p>
+				I don't want to use new hardware, but I have available:
+			</p>
+			<ul>
+				<li>Mainboard: ASROCK B85M-ITX</li>
+				<li>Pentium G3440T</li>
+				<li>128G SSD for booting</li>
+				<li>4 harddisks as raid for data</li>
+			</ul>
+			<p>
+				I personally prefer xubuntu, so I also need a bootable xubuntu
+				20.04 USB stick.
+			</p>
 
-	<h3>work in progress</h3>
-	<p>
-		The mainboard provides four SATA ports and an ESATA port. My
-		actually running server has the SSD connected to the ESATA port.
-		In the future I want to free the ESATA port again. Therefore
-		I have two possibilities:
-	</p>
-	<ul>
-		<li>use an already available USB3 to SATA converter</li>
-		<li>buy a PCIE SATA controller</li>
-	</ul>
-	<p>
-		I do the actual tries with the USB3 adapter - just because I
-		have it available. Up to now I face no differnce between having
-		the	SSD connected to SATA or to USB - the installation process
-		is the same.
-	<p><h4>News about this point</h4>
-	</p>
-		I found a pretty nice SATA controller for my needs:<br/>
-		<a href="https://www.delock.de/produkt/90396/merkmale.html">PCIe card 4 sata plus M.2</a><br/>
-		It's already ordered and I'll write my experience here.<br/>
-		Having in mind that I own a second housing with 4 hard disc slots this opens even more possibilities :-)
-	</p>
+			<h3>work in progress</h3>
+				<p>
+					The mainboard provides four SATA ports and an ESATA port. My
+					actually running server has the SSD connected to the ESATA port.
+					In the future I want to free the ESATA port again. Therefore
+					I have two possibilities:
+				</p>
+				<ul>
+					<li>use an already available USB3 to SATA converter</li>
+					<li>buy a PCIE SATA controller</li>
+				</ul>
+				<p>
+					I do the actual tries with the USB3 adapter - just because I
+					have it available. Up to now I face no differnce between having
+					the	SSD connected to SATA or to USB - the installation process
+					is the same.
+				<p>
+				<p>
+					Actually I'm setting up the new environment so the whole thing
+					is work in progress.
+				</p>
 
-	<p>
-		Actually I'm setting up the new environment so the whole thing
-		is work in progress.
-	</p>
+				<h4>News about this point</h4>
+					</p>
+						I found a pretty nice SATA controller for my needs:<br/>
+						<a href="https://www.delock.de/produkt/90396/merkmale.html">PCIe card 4 sata plus M.2</a><br/>
+						It's already ordered and I'll write my experience here.<br/>
+						Having in mind that I own a second housing with 4 hard disc slots this opens even more possibilities :-)
+					</p>
 
-	<h3>Things to know</h3>
-	<p>Just to point it out:</p>
-	<ul>
-		<li>
-			I know that having the boot data not on the redundant
-			system leads to non accessable data in the case the boot
-			device fails or gets corrupted. But I prefer having a fast
-			boot process and in the situation of a failing device I
-			have to do a desaster recovery of the boot device.
-		</li>
-		<li>
-			I also know that booting from USB is not as relaiable than
-			booting	from a SATA device. It may happen that I buy a PCIE
-			SATA adapter to solve this issue.
-		</li>
-		<li>
-			Additionally I also know that the used mainboard doesn't
-			support ECC RAM and therefore is not as reliable as a
-			professional server. But hey, this is a home server,
-			not a professional one.
-		</li>
-	</ul>
+			<h3>Things to know</h3>
+				<p>Just to point it out:</p>
+				<ul>
+					<li>
+						I know that having the boot data not on the redundant
+						system leads to non accessable data in the case the boot
+						device fails or gets corrupted. But I prefer having a fast
+						boot process and in the situation of a failing device I
+						have to do a desaster recovery of the boot device.
+					</li>
+					<li>
+						I also know that booting from USB is not as relaiable than
+						booting	from a SATA device. It may happen that I buy a PCIE
+						SATA adapter to solve this issue.
+					</li>
+					<li>
+						Additionally I also know that the used mainboard doesn't
+						support ECC RAM and therefore is not as reliable as a
+						professional server. But hey, this is a home server,
+						not a professional one.
+					</li>
+				</ul>
 
-	<h2>Requirements</h2>
-	<ul>
-		<li>
-			In normal case the server shall be off. I don't like current
-			consumption when it is not in use.
-		</li>
-		<li>
-			On request it shall be available FAST. So I want to use
-			suspend to RAM.
-		</li>
-		<li>
-			On power fail everything shall work smooth, so suspend to
-			RAM is not enough - the shutdown has to do a disk image,
-			too.
-		</li>
-		<li>
-			The system has to provide Wake On Lan - I don't want to
-			push the button.
-		</li>
-		<li>
-			The supension shall be done automatically after some
-			minutes of idletime
-		</li>
-	</ul>
+		<h2>Requirements</h2>
+			<ul>
+				<li>
+					In normal case the server shall be off. I don't like current
+					consumption when it is not in use.
+				</li>
+				<li>
+					On request it shall be available FAST. So I want to use
+					suspend to RAM.
+				</li>
+				<li>
+					On power fail everything shall work smooth, so suspend to
+					RAM is not enough - the shutdown has to do a disk image,
+					too.
+				</li>
+				<li>
+					The system has to provide Wake On Lan - I don't want to
+					push the button.
+				</li>
+				<li>
+					The supension shall be done automatically after some
+					minutes of idletime
+				</li>
+			</ul>
 
-	<h2>Already known issues</h2>
-	<ul>
-		<li>
-			(solved) during ubuntu 20.04 installation there is no
-			possibility to define the partition layout or to create
-			data pools with redundancy
-		</li>
-		<li>
-			(solved) the mainboard is equipped with a Qualcomm Atheros
-			AR8171 gigabit ethernet chip. This chip supports Wake On
-			Lan, but you have to tweak the linux system to enable it
-		</li>
-		<li>
-			(solved) the ubuntu partitioning when using the
-			installation on ZFS creates a 2G swap partition. This is
-			not large enough for suspend to disk
-		</li>
-	</ul>
+		<h2>Already known issues</h2>
+			<ul>
+				<li>
+					(solved) during ubuntu 20.04 installation there is no
+					possibility to define the partition layout or to create
+					data pools with redundancy
+				</li>
+				<li>
+					(solved) the mainboard is equipped with a Qualcomm Atheros
+					AR8171 gigabit ethernet chip. This chip supports Wake On
+					Lan, but you have to tweak the linux system to enable it
+				</li>
+				<li>
+					(solved) the ubuntu partitioning when using the
+					installation on ZFS creates a 2G swap partition. This is
+					not large enough for suspend to disk
+				</li>
+			</ul>
 
-	<h2>Creating the USB boot medium</h2>
-	<p>
-		I propose to use <a href="www.ventoy.net">Ventoy</a>. It's
-		available for Linux and Windows.<br/>
-		This page explains the usage of ventoy under linux.<br/>
-		Usage under Windows is explained on the website.<br/>
-		The configuration of the stick content is identical.
-	</p>
+		<h2>Creating the USB boot medium</h2>
+			<p>
+				I propose to use <a href="www.ventoy.net">Ventoy</a>. It's
+				available for Linux and Windows.<br/>
+				This page explains the usage of ventoy under linux.<br/>
+				Usage under Windows is explained on the website.<br/>
+				The configuration of the stick content is identical.
+			</p>
 
-	<h3>Download ventoy</h3>
-	<p>
-		Download the tool here:<br/>
-		<a href="https://github.com/ventoy/Ventoy/releases">Ventoy download from Github</a><br/>
-		You'll get a file "ventoy-x.y.z-linux.tar.gz" with x, y, and z
-		digits for the version.
-	</p>
-	<p>
-		Optional: check the SHA256 against the value given on the
-		website.<br/>
-		<code>sha256sum ventoy-x.y.z-linux.tar.gz</code><br/>
-		and compare the value.<br/>
-		don't forget to use the <em>real</em> filename
-	</p>
-	<p>
-		Extract the file with the command<br/>
-		<code>tar -xaf ventoy-x.y.z-linux.tar.gz</code><br/>
-		don't forget to use the <em>real</em> filename
-	</p>
+			<h3>Download ventoy</h3>
+				<p>
+					Download the tool here:<br/>
+					<a href="https://github.com/ventoy/Ventoy/releases">Ventoy download from Github</a><br/>
+					You'll get a file "ventoy-x.y.z-linux.tar.gz" with x, y, and z
+					digits for the version.
+				</p>
+				<p>
+					Optional: check the SHA256 against the value given on the
+					website.<br/>
+					<code>sha256sum ventoy-x.y.z-linux.tar.gz</code><br/>
+					and compare the value.<br/>
+					don't forget to use the <em>real</em> filename
+				</p>
+				<p>
+					Extract the file with the command<br/>
+					<code>tar -xaf ventoy-x.y.z-linux.tar.gz</code><br/>
+					don't forget to use the <em>real</em> filename
+				</p>
 
-	<h3>Create bootable USB stick</h3>
-	<p>
-		cd into the extracted directory<br/>
-		<code>cd ventoy-x.y.z</code><br/>
-		don't forget to use the <em>real</em> directory name
-	</p>
-	<p>
-		Insert an USB stick with enough space for the ubuntu iso file
-		plus a file for persistent data. I recommend to use a stick
-		with at least 8GB.<br/>
-	</p>
-	<p>
-		run ventroy with the command<br/>
-		<code>sudo sh Ventoy2Disk.sh -I /dev/XXX</code><br/>
-		Replace XXX by the device name of your USB stick.
-	</p>
-	<p>
-		Your computer will remount the stick and show one partition
-		named<br/>
-		<code>ventoy</code>
-	</p>
-	<p>
-		Copy your ubuntu iso file on this USB stick.<br/>
-		Now the stick is bootable, but we need the possibility to
-		modify files on the stick persistent.
-	</p>
+			<h3>Create bootable USB stick</h3>
+				<p>
+					cd into the extracted directory<br/>
+					<code>cd ventoy-x.y.z</code><br/>
+					don't forget to use the <em>real</em> directory name
+				</p>
+				<p>
+					Insert an USB stick with enough space for the ubuntu iso file
+					plus a file for persistent data. I recommend to use a stick
+					with at least 8GB.<br/>
+				</p>
+				<p>
+					run ventroy with the command<br/>
+					<code>sudo sh Ventoy2Disk.sh -I /dev/XXX</code><br/>
+					Replace XXX by the device name of your USB stick.
+				</p>
+				<p>
+					Your computer will remount the stick and show one partition
+					named<br/>
+					<code>ventoy</code>
+				</p>
+				<p>
+					Copy your ubuntu iso file on this USB stick.<br/>
+					Now the stick is bootable, but we need the possibility to
+					modify files on the stick persistent.
+				</p>
 
-	<h3>Create persistent data area on the stick</h3>
-	<p>
-		ventoy contains a plugin for persistent data creation on
-		bootable USB sticks. To prapare this execute the command<br/>
-		<code>sudo sh CreatePersistentImg.sh -s 1024 -t ext4 -l casper-rw</code>
-	</p>
-	<p>
-		This creates a file <code>persistence.dat</code> in your actual
-		directory.<br/>
-		Copy the file on the stick.
-	</p>
-	<p>
-		Now we have to tell ventoy to use this persistence file for
-		booting ubuntu.<br/>
-		To do so create a directory <code>ventoy</code>
-		on the USB stick.
-	</p>
-	<p>
-		Create a file <code>ventoy.json</code> in this directory.<br/>
-		Content of this file has to be:
-	</p>
-	<pre>
+			<h3>Create persistent data area on the stick</h3>
+				<p>
+					ventoy contains a plugin for persistent data creation on
+					bootable USB sticks. To prapare this execute the command<br/>
+					<code>sudo sh CreatePersistentImg.sh -s 1024 -t ext4 -l casper-rw</code>
+				</p>
+				<p>
+					This creates a file <code>persistence.dat</code> in your actual
+					directory.<br/>
+					Copy the file on the stick.
+				</p>
+				<p>
+					Now we have to tell ventoy to use this persistence file for
+					booting ubuntu.<br/>
+					To do so create a directory <code>ventoy</code>
+					on the USB stick.
+				</p>
+				<p>
+					Create a file <code>ventoy.json</code> in this directory.<br/>
+					Content of this file has to be:
+				</p>
+<pre>
 {
-    "persistence": [
-        {
-            "image": "/xubuntu-20.04.1-desktop-amd64.iso",
-            "backend": "/persistence.dat",
-            "autosel": 1
-        }
-    ]
+	"persistence": [
+		{
+			"image": "/xubuntu-20.04.1-desktop-amd64.iso",
+			"backend": "/persistence.dat",
+			"autosel": 1
+		}
+	]
 }
-	</pre>
-	<p>
-		You can adapt the file names to your needs. It's also possible
-		to rename <code>persistence.dat</code>, in that case use the
-		new filename in <code>ventoy.json</code>, too.
-	</p>
+</pre>
+				<p>
+					You can adapt the file names to your needs. It's also possible
+					to rename <code>persistence.dat</code>, in that case use the
+					new filename in <code>ventoy.json</code>, too.
+				</p>
 
-	<h3>Preparing the partitioning script on the boot medium</h3>
-	<p>
-		As mentioned above the default partitioning script of the
-		ubuntu installation medium creates a swap partition of 2G.
-		If the system shall do suspend to disk the swap partition is
-		used to store the complete RAM content. Knowing this leads to
-		the conclusion that 2G is - in most case - much to small.
-	</p>
-	<p>
-		As solution I first do a modification on the USB stick. The
-		stick creation process explained above leads to a persistent
-		storage in that boot system. So I boot the live stick and
-		change the required file. Since then this modified file is used
-		for partitioning.
-	</p>
-	<p>
-		After booting your future server system from the USB stick
-		with "Try without installation" patch the file<br/>
-		<code>/usr/share/ubiquity/zsys-setup</code><br/>
-		with root rights using this patch file:
-		<a href="zsys-setup.patch">zsys-setup.patch</a>
-	</p>
-	<p>
-		to patch the file open a terminal and type<br/>
-		<code>wget https://Andiweiss.github.io/projects/serverinstall/zsys-setup.patch</code><br/>
-		<code>cd /usr/share/ubiquity</code><br/>
-		<code>sudo patch -p1 /home/xubuntu/zsys-setup.patch</code>
-	</p>
-	<p>
-		This patch modifies the zfs initialization script in a way that
-		an additional zfs pool with the name "tank" is created.
-		This tank will be used to create the directories<br/>
-		<code>/home /srv /var/www</code>
-	</p>
-	<p>
-		After applying the patch there are two new lines near the top:<br/>
-		<code>TANKDEVICES="..."</code><br/>
-		<code>TANKMODE=""</code><br/>
-		In <code>TANKDEVICES</code> you can add a list of hard disks or
-		partitions whih shall be used for that data tank.<br/>
-		In <code>TANKMODE</code> you have to define how these devices
-		shall be combined. Here you can either leave the variable empty
-		or use <code>mirror</code>, <code>raidz</code> or <code>raidz2</code>.
-	</p>
-	<p>
-		Please check the zfs documentation what these modes do.
-	</p>
-	<p>
-		Recommendation for the device list:<br/>
-		<em>DO NOT</em> use <code>/dev/sd?</code><br/> here.
-		Use <code>/dev/disk/by-id</code> or any other of these by-*
-		directories - whatever fits your usage.
-	</p>
-	<p>
-		After saving this change the stick is prepared for installation.
-		You can start the installation either with a new boot or without
-		rebooting by using the install ubuntu icon.
-	</p>
-	<p>
-		If you regulary work in Linux it's easy to have a look on that
-		file on another linux machine. After saving the file in the
-		life system shut down the life system and connect the USB stick
-		to your working linux system. In a default environment your
-		system will mount the stick under <code>/media/&lt;user&gt;/ventoy</code>
-	</p>
-	<p>
-		create a directory for temporary mounting of the persitence file<br/>
-		<code>mkdir pers</code>
-	</p>
-	<p>
-		Now mount the persistence file<br/>
-		<code>sudo mount /dev/media/&lt;user&gt;/ventoy/persistence.dat</code><br/>
-		In the case that you have chosen a different filename use that one.
-	</p>
-	<p>
-		Now you have access to your modified zsys-setup. You find it in<br/>
-		<code>pers/upper/usr/share/ubiquity/zsys-setup</code>
-	</p>
+			<h3>Preparing the partitioning script on the boot medium</h3>
+				<p>
+					As mentioned above the default partitioning script of the
+					ubuntu installation medium creates a swap partition of 2G.
+					If the system shall do suspend to disk the swap partition is
+					used to store the complete RAM content. Knowing this leads to
+					the conclusion that 2G is - in most case - much to small.
+				</p>
+				<p>
+					As solution I first do a modification on the USB stick. The
+					stick creation process explained above leads to a persistent
+					storage in that boot system. So I boot the live stick and
+					change the required file. Since then this modified file is used
+					for partitioning.
+				</p>
+				<p>
+					After booting your future server system from the USB stick
+					with "Try without installation" patch the file<br/>
+					<code>/usr/share/ubiquity/zsys-setup</code><br/>
+					with root rights using this patch file:
+					<a href="zsys-setup.patch">zsys-setup.patch</a>
+				</p>
+				<p>
+					to patch the file open a terminal and type<br/>
+					<code>wget https://Andiweiss.github.io/projects/serverinstall/zsys-setup.patch</code><br/>
+					<code>cd /usr/share/ubiquity</code><br/>
+					<code>sudo patch -p1 /home/xubuntu/zsys-setup.patch</code>
+				</p>
+				<p>
+					This patch modifies the zfs initialization script in a way that
+					an additional zfs pool with the name "tank" is created.
+					This tank will be used to create the directories<br/>
+					<code>/home /srv /var/www</code>
+				</p>
+				<p>
+					After applying the patch there are two new lines near the top:<br/>
+					<code>TANKDEVICES="..."</code><br/>
+					<code>TANKMODE=""</code><br/>
+					In <code>TANKDEVICES</code> you can add a list of hard disks or
+					partitions whih shall be used for that data tank.<br/>
+					In <code>TANKMODE</code> you have to define how these devices
+					shall be combined. Here you can either leave the variable empty
+					or use <code>mirror</code>, <code>raidz</code> or <code>raidz2</code>.
+				</p>
+				<p>
+					Please check the zfs documentation what these modes do.
+				</p>
+				<p>
+					Recommendation for the device list:<br/>
+					<em>DO NOT</em> use <code>/dev/sd?</code><br/> here.
+					Use <code>/dev/disk/by-id</code> or any other of these by-*
+					directories - whatever fits your usage.
+				</p>
+				<p>
+					After saving this change the stick is prepared for installation.
+					You can start the installation either with a new boot or without
+					rebooting by using the install ubuntu icon.
+				</p>
+				<p>
+					If you regulary work in Linux it's easy to have a look on that
+					file on another linux machine. After saving the file in the
+					life system shut down the life system and connect the USB stick
+					to your working linux system. In a default environment your
+					system will mount the stick under <code>/media/&lt;user&gt;/ventoy</code>
+				</p>
+				<p>
+					create a directory for temporary mounting of the persitence file<br/>
+					<code>mkdir pers</code>
+				</p>
+				<p>
+					Now mount the persistence file<br/>
+					<code>sudo mount /dev/media/&lt;user&gt;/ventoy/persistence.dat</code><br/>
+					In the case that you have chosen a different filename use that one.
+				</p>
+				<p>
+					Now you have access to your modified zsys-setup. You find it in<br/>
+					<code>pers/upper/usr/share/ubiquity/zsys-setup</code>
+				</p>
 
-	<h2>Starting the installation</h2>
-	<p>
-		Do the installation in the regular way. Just keep care for one
-		Window:
-	</p>
-	<p>
-		In the Window "Installation type" you have to chose "Advanced
-		Features ...". In the now opened window select "EXPERIMENTAL:
-		Erase disk and use ZFS". Then select the device you want to boot
-		from.
-	</p>
-	<p>
-		Now let the installer do its work. After that you'll have an
-		ubuntu system on one hard disk using ZFS wherever it is
-		possible. There's only one partition with another file system.
-		The EFI partition must not be converted to ZFS. This one has
-		to stay on VFAT.
-	</p>
+		<h2>Starting the installation</h2>
+			<p>
+				Do the installation in the regular way. Just keep care for one
+				Window:
+			</p>
+			<p>
+				In the Window "Installation type" you have to chose "Advanced
+				Features ...". In the now opened window select "EXPERIMENTAL:
+				Erase disk and use ZFS". Then select the device you want to boot
+				from.
+			</p>
+			<p>
+				Now let the installer do its work. After that you'll have an
+				ubuntu system on one hard disk using ZFS wherever it is
+				possible. There's only one partition with another file system.
+				The EFI partition must not be converted to ZFS. This one has
+				to stay on VFAT.
+			</p>
 
-	<h2>Small configuration issues</h2>
-	<p>
-		After the ubuntu installation process is finished we have a
-		clean installation waiting for further configuration. This is
-		mainly one thing I do not like:<br/>
-		There are icons for rpool and bpool on the desktop I want to
-		get rid of.
-	</p>
-	<p>
-		To get rid of these icons we have to enter two lines in<br/>
-		<code>/etc/fstab</code>
-	</p>
-	<p>
-		This file has to be editied with root rights. Just add the two
-		lines<br/>
-		<code>LABEL=rpool	none	auto	noauto	0	0</code><br/>
-		<code>LABEL=bpool	none	auto	noauto	0	0</code>
-	</p>
-	<p>
-		One thing I really like is the possibility to use pageup /
-		pagedown for searching the history. This is enabled in<br/>
-		<code>/etc/inputrc</code>
-	</p>
-	<p>
-		As last little config issue I disable the bluetooth service. It
-		usually crashes during boot and I don't have a bluetooth device
-		connected to the server.<br/>
-		<code>sudo systemctl disable bluetooth</code>
-	</p>
+		<h2>Small configuration issues</h2>
+			<p>
+				After the ubuntu installation process is finished we have a
+				clean installation waiting for further configuration. This is
+				mainly one thing I do not like:<br/>
+				There are icons for rpool and bpool on the desktop I want to
+				get rid of.
+			</p>
+			<p>
+				To get rid of these icons we have to enter two lines in<br/>
+				<code>/etc/fstab</code>
+			</p>
+			<p>
+				This file has to be editied with root rights. Just add the two
+				lines<br/>
+				<code>LABEL=rpool	none	auto	noauto	0	0</code><br/>
+				<code>LABEL=bpool	none	auto	noauto	0	0</code>
+			</p>
+			<p>
+				One thing I really like is the possibility to use pageup /
+				pagedown for searching the history. This is enabled in<br/>
+				<code>/etc/inputrc</code>
+			</p>
+			<p>
+				As last little config issue I disable the bluetooth service. It
+				usually crashes during boot and I don't have a bluetooth device
+				connected to the server.<br/>
+				<code>sudo systemctl disable bluetooth</code>
+			</p>
 
-	<h2>Configuration of suspend and hibernate</h2>
-	<p>
-		No the basics are done. We have a system booting from ZFS and
-		the desktop is clean.
-	</p>
-	<p>
-		The next step to do is the configuration of suspend to RAM and
-		suspend to disk.
-	</p>
-	<p>
-		To get supend, hibernate and a combination of both full
-		functional we just have to install one official ubuntu package:<br/>
-		<code>sudo apt install uswsusp</code>
-	</p>
-	<p>
-		Having this package installed there is nothing to say against a
-		test of suspend to ram, disk or both.
-	</p>
-	<p>
-		To test suspend to RAM execute the command<br/>
-		<code>sudo s2ram</code>
-	</p>
-	<p>
-		If everything is fine the system shuts down very fast.
-		At least my system wakes up with hitting any key on the
-		keyboard. Everything is fine if you don't get the regular login
-		but the screen saver password request.
-	</p>
-	<p>
-		Next try is suspend to disk. The command for doing that is<br/>
-		<code>sudo s2disk</code>
-	</p>
-	<p>
-		In this case shuting down needs a bit more time and the system
-		prints additional information on the screen where the image is
-		stored and how large it is. On boot it takes the bios time,
-		then loads the image and again there should be the screensaver
-		password request. If you get the regular login screen something
-		went wrong.
-	</p>
-	<p>
-		Last test for me is testing if the combination suspend to RAM
-		and to disk is also working fine. The related command is<br/>
-		<code>sudo s2both</code>
-	</p>
-	<p>
-		After this the shut down looks simular as in s2disk. Shutting
-		down needs the same time as in s2disk. But as long as you don't
-		pull the power cord the system will start up in the same time
-		as with s2disk.<br/>
-		<em>If</em> you pull the power cord and plug it again the system
-		will again recover in the same state where you entered s2both.
-	</p>
-	<p>
-		to have this as a sensefull feature you have to setup your BIOS
-		in the way that after power loss the computer starts up. In most
-		cases the default for this setting is "keep it off".
-	</p>
+		<h2>Configuration of suspend and hibernate</h2>
+			<p>
+				No the basics are done. We have a system booting from ZFS and
+				the desktop is clean.
+			</p>
+			<p>
+				The next step to do is the configuration of suspend to RAM and
+				suspend to disk.
+			</p>
+			<p>
+				To get supend, hibernate and a combination of both full
+				functional we just have to install one official ubuntu package:<br/>
+				<code>sudo apt install uswsusp</code>
+			</p>
+			<p>
+				Having this package installed there is nothing to say against a
+				test of suspend to ram, disk or both.
+			</p>
+			<p>
+				To test suspend to RAM execute the command<br/>
+				<code>sudo s2ram</code>
+			</p>
+			<p>
+				If everything is fine the system shuts down very fast.
+				At least my system wakes up with hitting any key on the
+				keyboard. Everything is fine if you don't get the regular login
+				but the screen saver password request.
+			</p>
+			<p>
+				Next try is suspend to disk. The command for doing that is<br/>
+				<code>sudo s2disk</code>
+			</p>
+			<p>
+				In this case shuting down needs a bit more time and the system
+				prints additional information on the screen where the image is
+				stored and how large it is. On boot it takes the bios time,
+				then loads the image and again there should be the screensaver
+				password request. If you get the regular login screen something
+				went wrong.
+			</p>
+			<p>
+				Last test for me is testing if the combination suspend to RAM
+				and to disk is also working fine. The related command is<br/>
+				<code>sudo s2both</code>
+			</p>
+			<p>
+				After this the shut down looks simular as in s2disk. Shutting
+				down needs the same time as in s2disk. But as long as you don't
+				pull the power cord the system will start up in the same time
+				as with s2disk.<br/>
+				<em>If</em> you pull the power cord and plug it again the system
+				will again recover in the same state where you entered s2both.
+			</p>
+			<p>
+				to have this as a sensefull feature you have to setup your BIOS
+				in the way that after power loss the computer starts up. In most
+				cases the default for this setting is "keep it off".
+			</p>
 
-	<h2>Configuration of Wake On Lan</h2>
-	<p>
-		As already explained in the prerequesites the Atheros AR8171 in
-		principle supports Wake On Lan, but it is completely disabled
-		in the ubuntu standard installation. So we're going to activate
-		it now.
-	</p>
-	<p>
-		First thing to do is to install ethtool:<br/>
-		<code>sudo apt install ethtool</code>
-	</p>
-	<p>
-		Now we need to know which interface we want to configure:<br/>
-		<code>ip link</code><br/>
-		We identify the interface, in my case this is <code>enp2s0</code>
-	</p>
-	<p>
-		Next step is to check the supported wake on lan modes and the
-		actually configured ones:<br/>
-		<code>sudo ethtool enp2s0 | grep Wake-on</code>
-	</p>
-	<p>
-		On my server hardware this reports:<br/>
-		<code>Supports Wake-on: d</code><br/>
-		<code>Wake-on: d</code><br/>
-	</p>
-	<p>
-		This is sad, because this means: No Wake On Lan supported ...<br/>
-		<em>But:</em> the driver supports WOL, it just has to be
-		enabled. This is done by an additional kernel command line
-		parameter.
-	</p>
-	<p>
-		To get WOL working on the Atheros AR8171 the kernel requires
-		the additional commandline paramter <code>alx.enable_wol=1</code>.
-		To add this parameter edit the file <code>/etc/default/grub</code>
-		with root rights. Here you find a line<br/>
-		<code>GRUB_CMDLINE_LINUX_DEFAULT="&lt;some_parameters&gt;"</code>
-	</p>
-	<p>
-		in this line add <code>alx.enable_wol=1</code> with  leading
-		blank in front of the second quotation mark. After doing that
-		execute the command<br/>
-		<code>sudo update-grub</code><br/>
-		to overtake the change.
-	</p>
-	<p>
-		Now execute a reboot, open a terminal and try the command<br/>
-		<code>sudo ethtool enp2s0 | grep Wake-on</code><br/>
-		again.
-	</p>
-	<p>
-		The new result is:<br>
-		<code>Supports Wake-on: pg</code><br/>
-		<code>Wake-on: pg</code><br/>
-	</p>
-	<p>
-		So now Wake On Lan is activated on
-		<ul>
-			<li>phy activity</li>
-			<li>MagicPacket</li>
-		</ul>
-		I don't like phy activity waking up my system, so I have to
-		use ethtool to change that behavior. Chaninging it in the
-		commandline will be lost after reboot, therefore I add a task
-		in systemd.
-	</p>
-	<p>
-		To create that service create the file<br/>
-		<code>/etc/systemd/system/wol.service</code><br/>
-		with root rights. This file has to contain:
+		<h2>Configuration of Wake On Lan</h2>
+			<p>
+				As already explained in the prerequesites the Atheros AR8171 in
+				principle supports Wake On Lan, but it is completely disabled
+				in the ubuntu standard installation. So we're going to activate
+				it now.
+			</p>
+			<p>
+				First thing to do is to install ethtool:<br/>
+				<code>sudo apt install ethtool</code>
+			</p>
+			<p>
+				Now we need to know which interface we want to configure:<br/>
+				<code>ip link</code><br/>
+				We identify the interface, in my case this is <code>enp2s0</code>
+			</p>
+			<p>
+				Next step is to check the supported wake on lan modes and the
+				actually configured ones:<br/>
+				<code>sudo ethtool enp2s0 | grep Wake-on</code>
+			</p>
+			<p>
+				On my server hardware this reports:<br/>
+				<code>Supports Wake-on: d</code><br/>
+				<code>Wake-on: d</code><br/>
+			</p>
+			<p>
+				This is sad, because this means: No Wake On Lan supported ...<br/>
+				<em>But:</em> the driver supports WOL, it just has to be
+				enabled. This is done by an additional kernel command line
+				parameter.
+			</p>
+			<p>
+				To get WOL working on the Atheros AR8171 the kernel requires
+				the additional commandline paramter <code>alx.enable_wol=1</code>.
+				To add this parameter edit the file <code>/etc/default/grub</code>
+				with root rights. Here you find a line<br/>
+				<code>GRUB_CMDLINE_LINUX_DEFAULT="&lt;some_parameters&gt;"</code>
+			</p>
+			<p>
+				in this line add <code>alx.enable_wol=1</code> with  leading
+				blank in front of the second quotation mark. After doing that
+				execute the command<br/>
+				<code>sudo update-grub</code><br/>
+				to overtake the change.
+			</p>
+			<p>
+				Now execute a reboot, open a terminal and try the command<br/>
+				<code>sudo ethtool enp2s0 | grep Wake-on</code><br/>
+				again.
+			</p>
+			<p>
+				The new result is:<br>
+				<code>Supports Wake-on: pg</code><br/>
+				<code>Wake-on: pg</code><br/>
+			</p>
+			<p>
+				So now Wake On Lan is activated on
+				<ul>
+					<li>phy activity</li>
+					<li>MagicPacket</li>
+				</ul>
+				I don't like phy activity waking up my system, so I have to
+				use ethtool to change that behavior. Changing it in the
+				commandline will be lost after reboot, therefore I add a task
+				in systemd.
+			</p>
+			<p>
+				To create that service create the file<br/>
+				<code>/etc/systemd/system/wol.service</code><br/>
+				with root rights. This file has to contain:
 <pre>
 [Unit]
 Description=Configure Wake-up on LAN
@@ -512,14 +513,193 @@ ExecStart=/sbin/ethtool -s enp2s0 wol g
 [Install]
 WantedBy=basic.target
 </pre>
-		Then enable the service with<br/>
-		<code>sudo systemctl enable wol.service</code>
-	</p>
-	<p>
-		After a reboot ethtool reports<br/>
-		<code>Supports Wake-on: pg</code><br/>
-		<code>Wake-on: g</code><br/>
-		<em>This</em> is what we want to get.
-	</p>
+				Then enable the service with<br/>
+				<code>sudo systemctl enable wol.service</code>
+			</p>
+			<p>
+				After a reboot ethtool reports<br/>
+				<code>Supports Wake-on: pg</code><br/>
+				<code>Wake-on: g</code>
+			</p>
+			<p>
+				<em>This</em> is what we want to get.
+			</p>
+			<p>
+				Testing the feature can be done with another linux system.
+				I recommend to use wakeonln which has to be installed with<br/>
+				<code>sudo apt install wakeonlan</code>
+			</p>
+			<p>
+				The previous used command <code>ip link</code> does not only
+				print the interface name. It also prints the mac address. The
+				mac address is the part behind <code>link/ether</code>,
+				containing six hexadecimal values with 2 digits each, the values
+				separated by colons.
+			</p>
+			<p>
+				To try if wake on lan is functional put your server to sleep
+				e.g. with <code>sudo s2ram</code>. Then, on the other machine,
+				use <code>wakeonlan 11:22:33:44:55:66</code> to wake it up again.
+				Take care to use the mac address of youre server. Another thing
+				you need to know is that the magic packet used for waking up a
+				system is not routed over wifi, so you have to use a computer
+				connected to the lan.
+			</p>
+
+		<h2>ssh server</h2>
+			<p>
+				Now the system has a state where I want to get remote access.
+				Therefore the next short step is the installation of the ssh
+				server.<br/>
+				<code>sudo apt install openssh-server</code>
+			</p>
+			<p>
+				In the case you want to replace an old server it may make sense
+				to overtake the ssh keys from the old machine. To do so copy
+				the directory <code>/etc/ssh</code> from the old machine to
+				the new one.
+			</p>
+
+		<h2>exporting nfs shares</h2>
+			<p>
+				Now we have a system providing the basic system features.
+				Now the server featurs have to be activated.
+				I prefer haveing nfs shares, so I don't take cifs shared into
+				account here.
+			</p>
+			<p>
+				First thing to prepare nfs shares is the installtion of the
+				nfs server:<br/>
+				<code>sudo apt install nfs-kernel-server</code><br/>
+			</p>
+			<p>
+				I decided to use the zfs mechanisms for exporting nfs shares.
+				Therefore exporting the filesystems is done with zfs properties,
+				not in /etc/exports.
+			</p>
+			<p>
+				I'm going to show the export with my folder containing the mp3
+				collection. This is located in <code>/srv/music</code>
+			</p>
+			<p>
+				First I have to create that dataset:
+				<code>sudo zfs create tank/ROOT/ubuntu_&lt;uuid&gt;/srv/music</code><br/>
+				<code>&lt;uuid&gt;</code> has been given by the ubuntu
+				installer.
+			</p>
+			<p>
+				by creating this dataset there's automatically a directory<br/>
+				<code>/srv/music</code><br/>
+				available. Take care to set the access (user, group, read,
+				write, execute, ...) according your needs.
+			</p>
+			<p>
+				Now we simply export this filesystem:<br/>
+				<code>sudo zfs set sharenfs=on tank/ROOT/ubuntu_&lt;uuid&gt;/srv/music</code>
+			</p>
+			<p>
+				After doing so this share can be mounted on another linux
+				machine:<br/>
+				<code>sudo mount server:/srv/music music</code>
+			</p>
+
+	<h2>Automatic shutdown</h2>
+		<p>
+			Now the basic system is complete.
+			User can be added and their home directory will be created
+			on the tank device. Suspend to ram and disk is working.
+			Wake on LAN is also full functional.
+			So the next thing is to shutdown the system automatically.
+		</p>
+		<p>
+			Actually I see two things which have to keep the system alive:
+			<ul>
+				<li>any nfs share in use</li>
+				<li>a user logged in via ssh or in the terminal</li>
+			</ul>
+		</p>
+		<h3>Detection of nfs mounts</h3>
+			<p>
+				To detect how many nfs mounts are actually in use I use the
+				program netstat. This is included in the ubuntu package
+				net-tools, which is not installed as default. So we have to install it:<br/>
+				<code>sudo apt install net-tools</code>
+			</p>
+			<p>
+				To get a list of active nfs connections I use<br/>
+				<code>netstat -n --inet</code><br/>
+				I use the <code>-n</code> to get numeric output. Otherwise there has
+				to be a functional nameserver in your network. Additionally we need
+				the ip address of the client lateron.
+			</p>
+			<p>
+				This command does not only print the nfs connections, it prints all
+				active tcp and udp connections. So we have to filer for nfs.
+			</p>
+			<p>
+				Taking a look into <code>/etc/services</code> we find the ports used for
+				nfs. This is 2049.<br/>
+				With this we use<br/>
+				<code>netstat -n --inet | grep ':2049\W'</code><br/>
+				to get only the lines with active nfs connections.
+			</p>
+			<p>
+				During my tries I found an issue for generic usage:<br/>
+				If the system using the share doesn't unmount the share it can happen that
+				netstat detects the link active for a long time. So we also have to check if
+				the system with the actual link is still alive.
+			</p>
+			<p>
+				For the correct handling of this we need a script.
+				Here I don't quote the script, you'll find it where the cron job is explained.
+				I'll just explain how that works.
+			</p>
+			<p>
+				As long as the system is alive we expect that it can be ping'ed.
+				This depends if there is a firewall installed which blocks the ping,
+				on my system this is not the case. So I can use ping.
+			</p>
+			<p>
+				To be able to ping the system we need its ip address.
+				To get this we use the output of the found line of netstat and kill everything but the ip address:<br/>
+				<code>netstat -n --inet | grep ':2049\W' | sed -n 's|.*:2049\W*\([^:]*\):.*|\1|g;p'</code>
+			</p>
+		<h3>Detection of active users</h3>
+			<p>
+				Getting the information if users are logged in is easy:<br/>
+				<code>users</code><br/>
+				prints all users who are logged in.
+			</p>
+		<h3>Putting it together</h3>
+			<p>
+				Now we know how to get the information if we have to shut down.
+				These things have to be used for putting it all together.
+				We need to know if a user is actually logged in and if a share is
+				actually in use.<br/>
+				When this is not the case for a certain time the system shall shut down.
+			</p>
+			<p>
+				As this is time based we create a cron job for that.
+				In the cron job, once per minute, we collect the information.
+				Then we store the information when we first have no keep alive
+				status anymore. If this doesn't change for the defined time we
+				do a <code>s2both</code> and the system gets suspended.
+			</p>
+			<p>
+				I provide a script for the automatic shutdown:<br/>
+				<a href="autosuspend.sh">autosupend.sh</a><br/>
+				Save this script with root rights as <code>/bin/autosuspend.sh</code>
+				and don't forget to <code>sudo chmod +x /bin/autosuspend.sh</code>
+				to make it executable.
+			</p>
+			<p>
+				After that we create a cronjob calling this script every minute.
+				Therefore open your <code>/etc/crontab</code> with root rights
+				and add the line<br/>
+				<code>* * * * * root /bin/autosuspend.sh</code><br/>
+				With this the script is executed each minute and then checks
+				if the system shall stay active or not.
+			</p>
 </body>
 </html>
+<!-- wakeonlan d0:50:99:3c:d0:64 -->
