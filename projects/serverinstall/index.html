@@ -4,7 +4,6 @@
 	<meta charset="UTF-8">
 	<title>home server based on Ubuntu 20.04 with ZFS</title>
 	<meta name="Ubuntu home server" content="home server based on Ubuntu 20.04 with ZFS">
-<!--	<link href="../../design.css" rel="stylesheet">-->
 </head>
 
 <body>
@@ -700,6 +699,36 @@ WantedBy=basic.target
 				With this the script is executed each minute and then checks
 				if the system shall stay active or not.
 			</p>
+	<h2>Check if updates are available</h2>
+	<p>
+		The script <code>/usr/lib/update-notifier/apt-check</code> prints the amount
+		of packages which require an update.
+	</p>
+	<h2>Check if a reboot is required</h2>
+		<p>
+			During updates it may happen that a reboot of the server is required.
+			An ubuntu system tells that by having a file <code>/var/run/reboot-required</code>.
+		</p>
+	<h2>Using the bios alarm for wakeup</h2>
+		<p>
+			To check in cyclic times for updates I'ld like to start the server e.g. once
+			per week for checking for updates and eventually doing updates. This can be done
+			with the tool <code>rtcwake</code>
+		</p>
+		<p>
+			Example for the time: <code>date --date='7 days 04:00' +%s</code><br/>
+			&rarr; <code>rtcwake -m no -t `date --date='7 days 04:00' +%s`</code>
+		</p>
 </body>
 </html>
-<!-- wakeonlan d0:50:99:3c:d0:64 -->
+<!--
+Automatische Sicherheitsaktualisierung mit Einspielen unkritischer Pakete
+
+Zusätzlich kann man unkritische Aktualisierungen auch automatisch einspielen und nur noch diejenigen Pakete manuell aktualisieren, die eine Nachfrage stellen:
+
+#!/bin/bash
+apt-get update
+apt-get -yt $(lsb_release -cs)-security dist-upgrade
+apt-get --trivial-only dist-upgrade 
+apt-get autoclean
+-->
