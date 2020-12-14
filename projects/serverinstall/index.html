@@ -617,6 +617,12 @@ WantedBy=basic.target
 				<li>a user logged in via ssh or in the terminal</li>
 			</ul>
 		</p>
+		<p>
+			But before shutting down the system it shall be checked if there are
+			updates. If yes these updates shall be installed. And if - after
+			this update - the system requires a reboot this shall be done, too.
+		</p>
+
 		<h3>Detection of nfs mounts</h3>
 			<p>
 				To detect how many nfs mounts are actually in use I use the
@@ -663,12 +669,52 @@ WantedBy=basic.target
 				To get this we use the output of the found line of netstat and kill everything but the ip address:<br/>
 				<code>netstat -n --inet | grep ':2049\W' | sed -n 's|.*:2049\W*\([^:]*\):.*|\1|g;p'</code>
 			</p>
+
 		<h3>Detection of active users</h3>
 			<p>
 				Getting the information if users are logged in is easy:<br/>
 				<code>users</code><br/>
 				prints all users who are logged in.
 			</p>
+
+		<h3>Checking for updates</h3>
+			<p>
+				Easiest thing is not checking for updates but just doing the updates.
+				To do so we tell the system to
+				<ul>
+					<li>get the new package list</li>
+					<li>install the security updates</li>
+					<li>install the updates which don't require interaction</li>
+					<li>do an autoclean</li>
+				</ul>
+			</p>
+
+		<h3>Reboot if required</h3>
+			<p>
+				The update process creates a file <code>/var/run/reboot-required</code>
+				if a reboot is required. If this file is detected the server will - instead of
+				go to suspend - do a reboot.
+			</p>
+
+		<h3>Wake up the system for maintenance</h3>
+			<p>
+				In my case the server is often not used for a long time.
+				To avoid having a too long tim without updates the system
+				shall wake up at least once a week and do maintenance.
+			</p>
+			<p>
+				To get that there is a tool called <code>rtcwakeup</code> which
+				uses the rtc alarm to start the system at a defined time.
+				My decission is to start the system at the same day in one week
+				at 4 o'clock in the morning.
+			</p>
+			<p>
+				This is done in the script before shutting down the system
+				with the command<br/>
+				<code>rtcwake -m no -t `date --date='7 days 04:00' +%s`</code><br/>
+				This sets the alarm in the rtc which then will start up the system.
+			</p>
+
 		<h3>Putting it together</h3>
 			<p>
 				Now we know how to get the information if we have to shut down.
@@ -699,26 +745,6 @@ WantedBy=basic.target
 				With this the script is executed each minute and then checks
 				if the system shall stay active or not.
 			</p>
-	<h2>Check if updates are available</h2>
-	<p>
-		The script <code>/usr/lib/update-notifier/apt-check</code> prints the amount
-		of packages which require an update.
-	</p>
-	<h2>Check if a reboot is required</h2>
-		<p>
-			During updates it may happen that a reboot of the server is required.
-			An ubuntu system tells that by having a file <code>/var/run/reboot-required</code>.
-		</p>
-	<h2>Using the bios alarm for wakeup</h2>
-		<p>
-			To check in cyclic times for updates I'ld like to start the server e.g. once
-			per week for checking for updates and eventually doing updates. This can be done
-			with the tool <code>rtcwake</code>
-		</p>
-		<p>
-			Example for the time: <code>date --date='7 days 04:00' +%s</code><br/>
-			&rarr; <code>rtcwake -m no -t `date --date='7 days 04:00' +%s`</code>
-		</p>
 </body>
 </html>
 <!--
