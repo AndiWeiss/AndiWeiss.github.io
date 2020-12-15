@@ -273,31 +273,10 @@
 				</p>
 				<p>
 					This patch modifies the zfs initialization script in a way that
-					an additional zfs pool with the name "tank" is created.
-					This tank will be used to create the directories<br/>
-					<code>/home /srv /var/www</code>
+					the swap partition is as large as the physical ram of the machine.
 				</p>
 				<p>
-					After applying the patch there are two new lines near the top:<br/>
-					<code>TANKDEVICES="..."</code><br/>
-					<code>TANKMODE=""</code><br/>
-					In <code>TANKDEVICES</code> you can add a list of hard disks or
-					partitions whih shall be used for that data tank.<br/>
-					In <code>TANKMODE</code> you have to define how these devices
-					shall be combined. Here you can either leave the variable empty
-					or use <code>mirror</code>, <code>raidz</code> or <code>raidz2</code>.
-				</p>
-				<p>
-					Please check the zfs documentation what these modes do.
-				</p>
-				<p>
-					Recommendation for the device list:<br/>
-					<em>DO NOT</em> use <code>/dev/sd?</code><br/> here.
-					Use <code>/dev/disk/by-id</code> or any other of these by-*
-					directories - whatever fits your usage.
-				</p>
-				<p>
-					After saving this change the stick is prepared for installation.
+					After applying the patch the stick is prepared for installation.
 					You can start the installation either with a new boot or without
 					rebooting by using the install ubuntu icon.
 				</p>
@@ -324,8 +303,10 @@
 
 		<h2>Starting the installation</h2>
 			<p>
-				Do the installation in the regular way. Just keep care for one
-				Window:
+				Do the installation in the regular way.<br/>
+				<em>Do the installation with the boot disk only!</em><br/>
+				We take care for moving the user data later.<br/>
+				Just keep care for one Window:
 			</p>
 			<p>
 				In the Window "Installation type" you have to chose "Advanced
@@ -369,6 +350,75 @@
 				usually crashes during boot and I don't have a bluetooth device
 				connected to the server.<br/>
 				<code>sudo systemctl disable bluetooth</code>
+			</p>
+
+		<h2>Moving the user data</h2>
+			<p>
+				To move the user data on another ZFS volume we first have to create
+				the new pool. So now shut down your system and connect all disks
+				you want to use for your data pool.
+			</p>
+			<p>
+				If the disks have been used previously you may want to remove
+				all partition information, so that your server doesn't detect
+				the old partitioning schema. To do so start with the disks
+				connected and use the command<br/>
+				<code>sudo wipefs -af /dev/&lt;your_device&gt;?</code><br/>
+				<code>sudo wipefs -af /dev/&lt;your_device&gt;</code>
+			</p>
+			<p>
+				The first command removes any magic from inside any partition
+				while the second one removes any magic based on the partition table.
+			</p>
+			<p>
+				Now boot into your initial server installation again.<br/>
+				First thing to do is to create the new zfs pool. In this example
+				I use a single device as new pool, please check the zpool documentation
+				for how to setup a mirrored or a raidz pool.<br/>
+<pre>
+sudo zpool create -f \
+		-o ashift=12 \
+		-o autotrim=on \
+		-O compression=lz4 \
+		-O acltype=posixacl \
+		-O xattr=sa \
+		-O relatime=on \
+		-O normalization=formD \
+		-O mountpoint=none \
+		-O canmount=off \
+		-O dnodesize=auto \
+		-O sync=standard \
+		tank /dev/disk/by-id/&lt;your_disk_id&gt;
+</pre>
+			</p>
+			<p>
+				Next thing to do is to create a snapshot containing the whole
+				user data area:<br/>
+				<code>sudo zfs snapshot -r rpool/USERDATA@move_user_data</code>
+			</p>
+			<p>
+				Now this snapshot can be copied on the new pool:<br/>
+				<code>sudo zfs send -R rpool/USERDATA@move_user_data | sudo zfs receive tank/USERDATA</code>code>
+			</p>
+			<p>
+				The last step to get the user data on the new pool is to destroy
+				<code>rpool/USERDATA</code><br/>
+				Up to now I didn't find a better solution than booting from the
+				USB stick, importing the pools and destroying the dataset.
+			</p>
+			<p>
+				After booting from the stick open a terminal and use<br/>
+				<code>sudo zpool import -a</code><br/>
+				to import all pools. You'll get some warnings because of already
+				mounted directories now. Just ignore that.
+			</p>
+			<p>
+				The dataset is destroyed with<br/>
+				<code>sudo zfs destroy -r rpool/USERDATA</code>
+			</p>
+			<p>
+				After destroying the original user data you can do a reboot
+				and have your user data on your new pool.
 			</p>
 
 		<h2>Configuration of suspend and hibernate</h2>
