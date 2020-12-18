@@ -81,6 +81,14 @@
 						It's already ordered and I'll write my experience here.<br/>
 						Having in mind that I own a second housing with 4 hard disc slots this opens even more possibilities :-)
 					</p>
+					<p>
+						News about the adapter:<br/>
+						On my board this card doesn't work. It is not really detected by the BIOS.
+						Linux works fine with it but as soon as a device is connected to the card
+						the BIOS needs minutes to finish the boot process. And it also doesn't
+						boot from any device connected to this card.<br/>
+						So I have to take it out again, it only distrubs the server. Thet's a pitty.
+					</p>
 
 			<h3>Things to know</h3>
 				<p>Just to point it out:</p>
@@ -269,7 +277,7 @@
 					to patch the file open a terminal and type<br/>
 					<code>wget https://Andiweiss.github.io/projects/serverinstall/zsys-setup.patch</code><br/>
 					<code>cd /usr/share/ubiquity</code><br/>
-					<code>sudo patch -p1 /home/xubuntu/zsys-setup.patch</code>
+					<code>sudo patch -p1 < /home/xubuntu/zsys-setup.patch</code>
 				</p>
 				<p>
 					This patch modifies the zfs initialization script in a way that
