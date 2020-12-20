@@ -80,6 +80,7 @@ else
 	# we assume the system has been woken up
 	count=0
 	logstring 2 "wakeup"
+	echo "$count" > "$tmpfile"
 fi
 
 # get lines of NFS mounts
@@ -136,15 +137,40 @@ else
 	then
 		logstring 3 "installing updates"
 		touch "${tmpfile}.update"
-		apt-get update
-		apt-get -yt $(lsb_release -cs)-security dist-upgrade
-		apt-get --trivial-only dist-upgrade 
-		apt-get autoclean
-		rm -f "${tmpfile}.update"
-		if [ -e "/var/run/reboot-required" ];
+		update_success=0
+		if apt-get update;
 		then
-			logstring 1 "reboot required, executing reboot!"
-			reboot
+			logstring 3 "apt-get updates --> OK"
+			if apt-get -yt $(lsb_release -cs)-security dist-upgrade;
+			then
+				logstring 3 "apt-get -yt $(lsb_release -cs)-security dist-upgrade --> OK"
+				if apt-get --trivial-only dist-upgrade;
+				then
+					logstring 3 "apt-get --trivial-only dist-upgrade --> OK"
+					if apt-get autoclean;
+					then
+						logstring 3 "apt-get autoclean --> OK"
+						update_success=1
+					else
+						logstring 1 "apt-get autoclean --> FAILED"
+					fi
+				else
+					logstring 1 "apt-get --trivial-only dist-upgrade --> FAILED"
+				fi
+			else
+				logstring 1 "apt-get -yt $(lsb_release -cs)-security dist-upgrade --> FAILED"
+			fi
+		else
+			logstring 1 "apt-get updates --> FAILED"
+		fi
+		rm -f "${tmpfile}.update"
+		if [ "$update_success" -eq "1" ];
+		then
+			if [ -e "/var/run/reboot-required" ];
+			then
+				logstring 1 "reboot required, executing reboot!"
+				reboot
+			fi
 		fi
 	fi
 

@@ -87,7 +87,7 @@
 						Linux works fine with it but as soon as a device is connected to the card
 						the BIOS needs minutes to finish the boot process. And it also doesn't
 						boot from any device connected to this card.<br/>
-						So I have to take it out again, it only distrubs the server. Thet's a pitty.
+						So I have to take it out again, it only distrubs the server. That's a pitty.
 					</p>
 
 			<h3>Things to know</h3>
@@ -275,7 +275,7 @@
 				</p>
 				<p>
 					to patch the file open a terminal and type<br/>
-					<code>wget https://Andiweiss.github.io/projects/serverinstall/zsys-setup.patch</code><br/>
+					<code>wget https://AndiWeiss.github.io/projects/serverinstall/zsys-setup.patch</code><br/>
 					<code>cd /usr/share/ubiquity</code><br/>
 					<code>sudo patch -p1 < /home/xubuntu/zsys-setup.patch</code>
 				</p>
@@ -301,15 +301,33 @@
 				</p>
 				<p>
 					Now mount the persistence file<br/>
-					<code>sudo mount /dev/media/&lt;user&gt;/ventoy/persistence.dat</code><br/>
+					<code>sudo mount /dev/media/&lt;user&gt;/ventoy/persistence.dat pers</code><br/>
 					In the case that you have chosen a different filename use that one.
 				</p>
 				<p>
 					Now you have access to your modified zsys-setup. You find it in<br/>
 					<code>pers/upper/usr/share/ubiquity/zsys-setup</code>
 				</p>
+				<h4>Some additional findings concerning the partitioning script</h4>
+					<p>
+						I tried hard to get the installation doing all the things for having
+						a separate data tank. But it always failed on grub installation.
+						That's the reason why this howto just changes the swap partition size
+						and does the additional pool handling after base installation but before
+						starting the installed system the first time.
+					</p>
+						
 
-		<h2>Starting the installation</h2>
+		<h2>Installation process</h2>
+			<p>
+				I recommend doing the installation out of the life system, not the
+				<code>install xubuntu</code> possibility.<br/>
+				Reason for that is to be able to add the data device before booting
+				into the new installed system. The actual installer does not give the
+				possibility to add an additional zfs pool with different features
+				like mirroring or raid. The actual installer just puts everything on
+				one hard disk / ssd.
+			</p>
 			<p>
 				Do the installation in the regular way.<br/>
 				<em>Do the installation with the boot disk only!</em><br/>
@@ -329,12 +347,146 @@
 				The EFI partition must not be converted to ZFS. This one has
 				to stay on VFAT.
 			</p>
+			<p>
+				I hotplug the harddisk or harddisks for the server data pool
+				while still running the life system used for installation.
+				After the disks have been detected I use a commandline shell
+				to create the pool and the required data sets.
+			</p>
+			<p>
+				First step: import the already existing pools:<br/>
+				<code>sudo zpool import -R /target rpool</code><br/>
+				<code>sudo zpool import -R /target bpool</code>
+			</p>
+			<p>
+				Second step: create the data tank<br/>
+				For pool creation I use nearly the same parameters as used for rpool
+				creation:
+				<code>
+<pre>sudo zpool create -f \
+	-o ashift=12 \
+	-o autotrim=on \
+	-O compression=lz4 \
+	-O acltype=posixacl \
+	-O xattr=sa \
+	-O relatime=on \
+	-O normalization=formD \
+	-O mountpoint=none \
+	-O canmount=off \
+	-O dnodesize=auto \
+	-O sync=disabled \
+	tank0 /dev/disk/by-id/&lt;your_id_here&gt;
+</pre>
+				</code>
+				Checking this against the creation of <code>rpool</code> you'll face only
+				two differences:
+				<ul>
+					<li>the mount point is set to <code>none</code></li>
+					<li>no alternative mount point is defined (no <code>-R</code> is given)</li>
+				</ul>
+				If the data pool shall have mirroring, raid or other fancy
+				modes just adapt the parameters to your needs. Please keep in mind:<br/>
+				<em>DO NOT</em> use <code>/dev/sd*</code>code> for the pool creation!<br/>
+				Check the entries in <code>/dev/disk/by-id/</code> for the drives you
+				want to use and use these links instead.<br/>
+				By handing over the whole device zpool will first create a gpt partition
+				table, add two partitions - one with nearly the whole content plus
+				a small one containing some MB additional space. This is done to be able to
+				combine drives with small differences in the amount of sectors to one pool.
+				The large partition is used for zfs afterwards.
+			</p>
+			<p>
+				Third step is moving the initial user dataset. To do so we create a
+				snapshot of the base installed user data set and move this to
+				the new data pool.<br/>
+				<code>sudo zfs snapshot -r rpool/USERDATA@move</code><br/>
+				<code>sudo zfs send -R rpool/USERDATA@move | sudo zfs receive tank0/USERDATA</code><br/>
+				Now the snapshot is available on the additional pool. This snapshot contains
+				all properties of the original dataset. Parts of the properties are required
+				to have the regular ubuntu zfs mechanisms working.<br/>
+				Now the original data set can be destroyed:<br/>
+				<code>sudo zfs destroy -r rpool/USERDATA</code>
+			</p>
+			<p>
+				If you only want to use the user data on the data tank you're done with the
+				data movement. If you want to have server data follow the next steps and add more
+				dependent on your requirements. I want to have <code>/srv</code> and <code>/var/www</code>
+				on my data tank.
+			</p>
+			<p>
+				Fourth step: moving /srv on the data tank. Comparable procedure as with the
+				user data, but here the installation process uses an id in the created data sets.
+				So take care to replace &lt;ID&gt; by the id used in your instalation process.
+				You can read it with <code>zfs list</code><br/>
+				<code>sudo zfs snapshot -r rpool/ROOT/ubuntu_&lt;ID&gt;/srv@move</code><br/>
+				<code>sudo zfs send -R rpool/ROOT/ubuntu_&lt;ID&gt;/srv@move | sudo zfs receive tank0/srv</code><br/>
+				<code>sudo zfs destroy -r rpool/ROOT/ubuntu_&lt;ID&gt;/srv</code><br/>
+				As the mountpoint in the original dataset is inherited from the upper dataset
+				we have to set the correct mountpoint here:<br/>
+				<code>sudo zfs set mountpoint=/srv tank0/srv</code>
+			</p>
+			<p>
+				Fifth step: As mentioned I also want to get <code>/var/www</code> on the tank.
+				There is only one difference to moving the <code>/srv</code>: I want to create
+				<code>/var</code> first and then put <code>/var/www</code> on top. Just for having
+				a better overview.<br/>
+				So this is the command list for doing so:<br/>
+				<code>sudo zfs snapshot -r rpool/ROOT/ubuntu_&lt;ID&gt;/var/www@move</code><br/>
+				<code>sudo zfs create tank0/var -o canmount=off -o mountpoint=none</code><br/>
+				<code>sudo zfs send -R rpool/ROOT/ubuntu_&lt;ID&gt;/var/www@move | sudo zfs receive tank0/var/www</code><br/>
+				<code>sudo zfs destroy -r rpool/ROOT/ubuntu_&lt;ID&gt;/var/www</code><br/>
+				<code>sudo zfs set mountpoint=/var/www tank0/var/www</code><br/>
+			</p>
+			<p>
+				Now we have to introduce the new pool to the system as bpool and rpool are.
+				<code>sudo zpool set cachefile= tank0</code><br/>
+				<code>sudo touch /target/etc/zfs/zfs-list.cache/tank0</code><br/>
+				<code>sudo zfs set sync=standard tank0</code><br/>
+			</p>
+			<p>
+				Having this done tank0 is ready for usage, so now we export all pools
+				in the opposite order as we imported / created them:<br/>
+				<code>sudo zpool export tank0</code><br/>
+				<code>sudo zpool export bpool</code><br/>
+				<code>sudo zpool export rpool</code><br/>
+			</p>
+
+		<h2>First boot of the fresh system</h2>
+			<p>
+				The system has to be rebooted. You can do that fastest with
+				<code>sudo reboot</code><br/>
+				You will be requested to remove the installation medium and hit enter.
+			</p>
+			<p>
+				After doing so your system will <em>not</em> boot completly.<br/>
+				Up to now it doesn't know that it has to import the new created data sets.
+				But it requires these sets. So you will reach the emergency state.
+			</p>
+			<p>
+				Hit enter again to reach a command line.<br/>
+				Then type <code>zpool import tank0</code> and <code>exit</code><br/>
+				Now your system boots first time into the fresh installation.
+			</p>
+
+		<h2>ssh server</h2>
+			<p>
+				Now the system has a state where I want to get remote access.
+				Therefore the next short step is the installation of the ssh
+				server.<br/>
+				<code>sudo apt install openssh-server</code>
+			</p>
+			<p>
+				In the case you want to replace an old server it may make sense
+				to overtake the ssh keys from the old machine. To do so copy
+				the files <code>/etc/ssh/*key*</code> from the old machine to
+				the new one.
+			</p>
 
 		<h2>Small configuration issues</h2>
 			<p>
 				After the ubuntu installation process is finished we have a
-				clean installation waiting for further configuration. This is
-				mainly one thing I do not like:<br/>
+				clean installation waiting for further configuration. There is
+				one thing I do not like at all:<br/>
 				There are icons for rpool and bpool on the desktop I want to
 				get rid of.
 			</p>
@@ -358,75 +510,6 @@
 				usually crashes during boot and I don't have a bluetooth device
 				connected to the server.<br/>
 				<code>sudo systemctl disable bluetooth</code>
-			</p>
-
-		<h2>Moving the user data</h2>
-			<p>
-				To move the user data on another ZFS volume we first have to create
-				the new pool. So now shut down your system and connect all disks
-				you want to use for your data pool.
-			</p>
-			<p>
-				If the disks have been used previously you may want to remove
-				all partition information, so that your server doesn't detect
-				the old partitioning schema. To do so start with the disks
-				connected and use the command<br/>
-				<code>sudo wipefs -af /dev/&lt;your_device&gt;?</code><br/>
-				<code>sudo wipefs -af /dev/&lt;your_device&gt;</code>
-			</p>
-			<p>
-				The first command removes any magic from inside any partition
-				while the second one removes any magic based on the partition table.
-			</p>
-			<p>
-				Now boot into your initial server installation again.<br/>
-				First thing to do is to create the new zfs pool. In this example
-				I use a single device as new pool, please check the zpool documentation
-				for how to setup a mirrored or a raidz pool.<br/>
-<pre>
-sudo zpool create -f \
-		-o ashift=12 \
-		-o autotrim=on \
-		-O compression=lz4 \
-		-O acltype=posixacl \
-		-O xattr=sa \
-		-O relatime=on \
-		-O normalization=formD \
-		-O mountpoint=none \
-		-O canmount=off \
-		-O dnodesize=auto \
-		-O sync=standard \
-		tank /dev/disk/by-id/&lt;your_disk_id&gt;
-</pre>
-			</p>
-			<p>
-				Next thing to do is to create a snapshot containing the whole
-				user data area:<br/>
-				<code>sudo zfs snapshot -r rpool/USERDATA@move_user_data</code>
-			</p>
-			<p>
-				Now this snapshot can be copied on the new pool:<br/>
-				<code>sudo zfs send -R rpool/USERDATA@move_user_data | sudo zfs receive tank/USERDATA</code>code>
-			</p>
-			<p>
-				The last step to get the user data on the new pool is to destroy
-				<code>rpool/USERDATA</code><br/>
-				Up to now I didn't find a better solution than booting from the
-				USB stick, importing the pools and destroying the dataset.
-			</p>
-			<p>
-				After booting from the stick open a terminal and use<br/>
-				<code>sudo zpool import -a</code><br/>
-				to import all pools. You'll get some warnings because of already
-				mounted directories now. Just ignore that.
-			</p>
-			<p>
-				The dataset is destroyed with<br/>
-				<code>sudo zfs destroy -r rpool/USERDATA</code>
-			</p>
-			<p>
-				After destroying the original user data you can do a reboot
-				and have your user data on your new pool.
 			</p>
 
 		<h2>Configuration of suspend and hibernate</h2>
@@ -603,20 +686,6 @@ WantedBy=basic.target
 				connected to the lan.
 			</p>
 
-		<h2>ssh server</h2>
-			<p>
-				Now the system has a state where I want to get remote access.
-				Therefore the next short step is the installation of the ssh
-				server.<br/>
-				<code>sudo apt install openssh-server</code>
-			</p>
-			<p>
-				In the case you want to replace an old server it may make sense
-				to overtake the ssh keys from the old machine. To do so copy
-				the directory <code>/etc/ssh</code> from the old machine to
-				the new one.
-			</p>
-
 		<h2>exporting nfs shares</h2>
 			<p>
 				Now we have a system providing the basic system features.
@@ -640,9 +709,7 @@ WantedBy=basic.target
 			</p>
 			<p>
 				First I have to create that dataset:
-				<code>sudo zfs create tank/ROOT/ubuntu_&lt;uuid&gt;/srv/music</code><br/>
-				<code>&lt;uuid&gt;</code> has been given by the ubuntu
-				installer.
+				<code>sudo zfs create tank0/srv/music</code>
 			</p>
 			<p>
 				by creating this dataset there's automatically a directory<br/>
@@ -652,7 +719,7 @@ WantedBy=basic.target
 			</p>
 			<p>
 				Now we simply export this filesystem:<br/>
-				<code>sudo zfs set sharenfs=on tank/ROOT/ubuntu_&lt;uuid&gt;/srv/music</code>
+				<code>sudo zfs set sharenfs=on tank0/srv/music</code>
 			</p>
 			<p>
 				After doing so this share can be mounted on another linux
@@ -790,10 +857,16 @@ WantedBy=basic.target
 			</p>
 			<p>
 				I provide a script for the automatic shutdown:<br/>
-				<a href="autosuspend.sh">autosupend.sh</a><br/>
+				<a href="autosuspend.sh">autosuspend.sh</a><br/>
 				Save this script with root rights as <code>/bin/autosuspend.sh</code>
 				and don't forget to <code>sudo chmod +x /bin/autosuspend.sh</code>
 				to make it executable.
+			</p>
+			<p>
+				<code>wget https://AndiWeiss.github.io/projects/serverinstall/autosuspend.sh</code><br/>
+				<code>chmod a+x autosuspend.sh</code><br/>
+				<code>sudo chown root:root autosuspend.sh</code><br/>
+				<code>sudo mv autosuspend.sh /bin</code>
 			</p>
 			<p>
 				After that we create a cronjob calling this script every minute.
@@ -806,13 +879,5 @@ WantedBy=basic.target
 </body>
 </html>
 <!--
-Automatische Sicherheitsaktualisierung mit Einspielen unkritischer Pakete
-
-Zusätzlich kann man unkritische Aktualisierungen auch automatisch einspielen und nur noch diejenigen Pakete manuell aktualisieren, die eine Nachfrage stellen:
-
-#!/bin/bash
-apt-get update
-apt-get -yt $(lsb_release -cs)-security dist-upgrade
-apt-get --trivial-only dist-upgrade 
-apt-get autoclean
+sudo apt install uswsusp ethtool nfs-kernel-server net-tools 
 -->
