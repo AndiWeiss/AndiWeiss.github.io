@@ -7,37 +7,63 @@
 </head>
 
 <body>
-	<h1>home server based on Ubuntu 20.04 with ZFS</h1>
-		<p>
-			Just as information:<br/>
-			Up to now this page is just a collection of what I do to setup
-			my server. Therefor the design of these pages is not nice. It's
-			more or less my reminder for what to do during a new
-			installation.
-		</p>
+	<header>
+		<h1>home server based on Ubuntu 20.04 with ZFS</h1>
+	</header>
+	<nav>
+		<ul>
+			<li><a href="#introduction">Introduction</a></li>
+			<ul>
+				<li><a href="#preconditions">Preconditions</a></li>
+				<li><a href="#requirements">Requirements</a></li>
+				<li><a href="#known_issues">Known issues</a></li>
+			</ul>
+			<li><a href="#boot_medium">Boot medium creation</a></li>
+			<ul>
+				<li><a href="#download_ventoy">Download ventoy</a></li>
+				<li><a href="#stick_creation">Create bootable USB stick</a></li>
+				<li><a href="#persistency">Persistent data area creation</a></li>
+				<li><a href="#partitioning">Partition script modification</a></li>
+				<li><a href="#part_issue">Partitioning issue</a></li>
+			</ul>
+			<li><a href="#installation">Installation proces</a></li>
+			<ul>
+				<li><a href="#additional_hdds">Initialisation of the data pool</a></li>
+				<li><a href="#moving_userdata">Moving USERDATA</a></li>
+				<li><a href="#moving_serverdata">Moving other datasets</a></li>
+				<li><a href="#first_boot">First boot of the fresh system</a></li>
+			</ul>
+			<li><a href="#configuration">System configuration</a></li>
+			<li><a href="#shutdown">Automatic shutdown</a></li>
+			<ul>
+				<li><a href="#nfs_detection">Detection of nfs mounts</a></li>
+				<li><a href="#user_detection">Detection of active users</a></li>
+				<li><a href="#updates">Checking for updates</a></li>
+				<li><a href="#reboot">Reboot if required</a></li>
+				<li><a href="#maintenance">Wake up for maintenance</a></li>
+				<li><a href="#all_together">Putting it together</a></li>
+			</ul>
+		</ul>
+	</nav>
+
+	<h1 id="introduction">Introduction</h1>
 		<p>
 			I am running a home server since many years.
 			Somewhere around 2018 I deciced to switch to a new server
-			using ZFS as filesystem. At that time I started with a
-			combination of several howtos I found in the internet. That
-			was a lot of work and I have no chance to list all of the
-			sources as each of them only solved one step of the whole
-			story.
+			based on XUbuntu 18.04 using ZFS as filesystem. At that time
+			I started with a combination of several howtos I found in
+			the internet. That was a lot of work and I have no chance to
+			list all of the sources as each of them only solved one step
+			of the whole story.
 		</p>
-
 		<p>
-			Now, beginning with Ubuntu 20.04, Canonical added
-			(experimental) support of Ubuntu installation on ZFS. Therefore
-			I decided to do a clean new installation of my server.
-			Additionally I decided to create a documentation of each step I
-			do - maybe it is usefull for other people, too
+			After switching all of my desktops to XUbuntu 20.04 on ZFS I
+			decided to do the same with my server. So I first had to
+			check if all things I had to find out to get my requirements
+			fullfilled still work on XUbuntu 20.04. And they did.
 		</p>
 
-		<p>
-			So just feel free to follow my steps.
-		</p>
-
-		<h2>Preconditions</h2>
+		<h2 id="preconditions">Preconditions</h2>
 			<p>
 				I don't want to use new hardware, but I have available:
 			</p>
@@ -48,72 +74,14 @@
 				<li>4 harddisks as raid for data</li>
 			</ul>
 			<p>
-				I personally prefer xubuntu, so I also need a bootable xubuntu
+				I personally prefer XUbuntu, so I also need a bootable XUbuntu
 				20.04 USB stick.
 			</p>
 
-			<h3>work in progress</h3>
-				<p>
-					The mainboard provides four SATA ports and an ESATA port. My
-					actually running server has the SSD connected to the ESATA port.
-					In the future I want to free the ESATA port again. Therefore
-					I have two possibilities:
-				</p>
-				<ul>
-					<li>use an already available USB3 to SATA converter</li>
-					<li>buy a PCIE SATA controller</li>
-				</ul>
-				<p>
-					I do the actual tries with the USB3 adapter - just because I
-					have it available. Up to now I face no differnce between having
-					the	SSD connected to SATA or to USB - the installation process
-					is the same.
-				<p>
-				<p>
-					Actually I'm setting up the new environment so the whole thing
-					is work in progress.
-				</p>
-
-				<h4>News about this point</h4>
-					</p>
-						I found a pretty nice SATA controller for my needs:<br/>
-						<a href="https://www.delock.de/produkt/90396/merkmale.html">PCIe card 4 sata plus M.2</a><br/>
-						It's already ordered and I'll write my experience here.<br/>
-						Having in mind that I own a second housing with 4 hard disc slots this opens even more possibilities :-)
-					</p>
-					<p>
-						News about the adapter:<br/>
-						On my board this card doesn't work. It is not really detected by the BIOS.
-						Linux works fine with it but as soon as a device is connected to the card
-						the BIOS needs minutes to finish the boot process. And it also doesn't
-						boot from any device connected to this card.<br/>
-						So I have to take it out again, it only distrubs the server. That's a pitty.
-					</p>
-
-			<h3>Things to know</h3>
-				<p>Just to point it out:</p>
-				<ul>
-					<li>
-						I know that having the boot data not on the redundant
-						system leads to non accessable data in the case the boot
-						device fails or gets corrupted. But I prefer having a fast
-						boot process and in the situation of a failing device I
-						have to do a desaster recovery of the boot device.
-					</li>
-					<li>
-						I also know that booting from USB is not as relaiable than
-						booting	from a SATA device. It may happen that I buy a PCIE
-						SATA adapter to solve this issue.
-					</li>
-					<li>
-						Additionally I also know that the used mainboard doesn't
-						support ECC RAM and therefore is not as reliable as a
-						professional server. But hey, this is a home server,
-						not a professional one.
-					</li>
-				</ul>
-
-		<h2>Requirements</h2>
+		<h2 id="requirements">Requirements</h2>
+			<p>
+				I have a list of things my server has to fullfill:
+			</p>
 			<ul>
 				<li>
 					In normal case the server shall be off. I don't like current
@@ -138,15 +106,17 @@
 				</li>
 			</ul>
 
-		<h2>Already known issues</h2>
+		<h2 id="known_issues">Known issues</h2>
 			<ul>
 				<li>
-					(solved) during ubuntu 20.04 installation there is no
-					possibility to define the partition layout or to create
-					data pools with redundancy
+					during ubuntu 20.04 installation there is no possibility
+					to define the partition layout or to create data pools
+					with redundancy. Up to now I found no functional
+					modification to create the datapool automatically
+					during the regular XUbuntu installation process.
 				</li>
 				<li>
-					(solved) the mainboard is equipped with a Qualcomm Atheros
+					(solved) The mainboard is equipped with a Qualcomm Atheros
 					AR8171 gigabit ethernet chip. This chip supports Wake On
 					Lan, but you have to tweak the linux system to enable it
 				</li>
@@ -157,83 +127,83 @@
 				</li>
 			</ul>
 
-		<h2>Creating the USB boot medium</h2>
+	<h1 id="boot_medium">Boot medium creation</h1>
+		<p>
+			I propose to use <a href="www.ventoy.net">Ventoy</a>. It's
+			available for Linux and Windows.<br/>
+			This page explains the usage of ventoy under linux.<br/>
+			Usage under Windows is explained on the website.<br/>
+			The configuration of the stick content is identical.
+		</p>
+
+		<h2 id="download_ventoy">Download ventoy</h2>
 			<p>
-				I propose to use <a href="www.ventoy.net">Ventoy</a>. It's
-				available for Linux and Windows.<br/>
-				This page explains the usage of ventoy under linux.<br/>
-				Usage under Windows is explained on the website.<br/>
-				The configuration of the stick content is identical.
+				Download the tool here:<br/>
+				<a href="https://github.com/ventoy/Ventoy/releases">Ventoy download from Github</a><br/>
+				You'll get a file "ventoy-x.y.z-linux.tar.gz" with x, y, and z
+				digits for the version.
+			</p>
+			<p>
+				Optional: check the SHA256 against the value given on the
+				website.<br/>
+				<code>sha256sum ventoy-x.y.z-linux.tar.gz</code><br/>
+				and compare the value.<br/>
+				don't forget to use the <em>real</em> filename
+			</p>
+			<p>
+				Extract the file with the command<br/>
+				<code>tar -xaf ventoy-x.y.z-linux.tar.gz</code><br/>
+				don't forget to use the <em>real</em> filename
 			</p>
 
-			<h3>Download ventoy</h3>
-				<p>
-					Download the tool here:<br/>
-					<a href="https://github.com/ventoy/Ventoy/releases">Ventoy download from Github</a><br/>
-					You'll get a file "ventoy-x.y.z-linux.tar.gz" with x, y, and z
-					digits for the version.
-				</p>
-				<p>
-					Optional: check the SHA256 against the value given on the
-					website.<br/>
-					<code>sha256sum ventoy-x.y.z-linux.tar.gz</code><br/>
-					and compare the value.<br/>
-					don't forget to use the <em>real</em> filename
-				</p>
-				<p>
-					Extract the file with the command<br/>
-					<code>tar -xaf ventoy-x.y.z-linux.tar.gz</code><br/>
-					don't forget to use the <em>real</em> filename
-				</p>
+		<h2 id="stick_creation">Create bootable USB stick</h2>
+			<p>
+				cd into the extracted directory<br/>
+				<code>cd ventoy-x.y.z</code><br/>
+				don't forget to use the <em>real</em> directory name
+			</p>
+			<p>
+				Insert an USB stick with enough space for the ubuntu iso file
+				plus a file for persistent data. I recommend to use a stick
+				with at least 8GB.<br/>
+			</p>
+			<p>
+				run ventroy with the command<br/>
+				<code>sudo sh Ventoy2Disk.sh -I /dev/XXX</code><br/>
+				Replace XXX by the device name of your USB stick.
+			</p>
+			<p>
+				Your computer will remount the stick and show one partition
+				named<br/>
+				<code>ventoy</code>
+			</p>
+			<p>
+				Copy your ubuntu iso file on this USB stick.<br/>
+				Now the stick is bootable, but we need the possibility to
+				modify files on the stick persistent.
+			</p>
 
-			<h3>Create bootable USB stick</h3>
-				<p>
-					cd into the extracted directory<br/>
-					<code>cd ventoy-x.y.z</code><br/>
-					don't forget to use the <em>real</em> directory name
-				</p>
-				<p>
-					Insert an USB stick with enough space for the ubuntu iso file
-					plus a file for persistent data. I recommend to use a stick
-					with at least 8GB.<br/>
-				</p>
-				<p>
-					run ventroy with the command<br/>
-					<code>sudo sh Ventoy2Disk.sh -I /dev/XXX</code><br/>
-					Replace XXX by the device name of your USB stick.
-				</p>
-				<p>
-					Your computer will remount the stick and show one partition
-					named<br/>
-					<code>ventoy</code>
-				</p>
-				<p>
-					Copy your ubuntu iso file on this USB stick.<br/>
-					Now the stick is bootable, but we need the possibility to
-					modify files on the stick persistent.
-				</p>
-
-			<h3>Create persistent data area on the stick</h3>
-				<p>
-					ventoy contains a plugin for persistent data creation on
-					bootable USB sticks. To prapare this execute the command<br/>
-					<code>sudo sh CreatePersistentImg.sh -s 1024 -t ext4 -l casper-rw</code>
-				</p>
-				<p>
-					This creates a file <code>persistence.dat</code> in your actual
-					directory.<br/>
-					Copy the file on the stick.
-				</p>
-				<p>
-					Now we have to tell ventoy to use this persistence file for
-					booting ubuntu.<br/>
-					To do so create a directory <code>ventoy</code>
-					on the USB stick.
-				</p>
-				<p>
-					Create a file <code>ventoy.json</code> in this directory.<br/>
-					Content of this file has to be:
-				</p>
+		<h2 id="persistency">Persistent data area creation</h2>
+			<p>
+				ventoy contains a plugin for persistent data creation on
+				bootable USB sticks. To prapare this execute the command<br/>
+				<code>sudo sh CreatePersistentImg.sh -s 1024 -t ext4 -l casper-rw</code>
+			</p>
+			<p>
+				This creates a file <code>persistence.dat</code> in your actual
+				directory.<br/>
+				Copy the file on the stick.
+			</p>
+			<p>
+				Now we have to tell ventoy to use this persistence file for
+				booting ubuntu.<br/>
+				To do so create a directory <code>ventoy</code>
+				on the USB stick.
+			</p>
+			<p>
+				Create a file <code>ventoy.json</code> in this directory.<br/>
+				Content of this file has to be:
+			</p>
 <pre>
 {
 	"persistence": [
@@ -245,125 +215,143 @@
 	]
 }
 </pre>
-				<p>
-					You can adapt the file names to your needs. It's also possible
-					to rename <code>persistence.dat</code>, in that case use the
-					new filename in <code>ventoy.json</code>, too.
-				</p>
+			<p>
+				You can adapt the file names to your needs. It's also possible
+				to rename <code>persistence.dat</code>, in that case use the
+				new filename in <code>ventoy.json</code>, too.
+			</p>
 
-			<h3>Preparing the partitioning script on the boot medium</h3>
-				<p>
-					As mentioned above the default partitioning script of the
-					ubuntu installation medium creates a swap partition of 2G.
-					If the system shall do suspend to disk the swap partition is
-					used to store the complete RAM content. Knowing this leads to
-					the conclusion that 2G is - in most case - much to small.
-				</p>
-				<p>
-					As solution I first do a modification on the USB stick. The
-					stick creation process explained above leads to a persistent
-					storage in that boot system. So I boot the live stick and
-					change the required file. Since then this modified file is used
-					for partitioning.
-				</p>
-				<p>
-					After booting your future server system from the USB stick
-					with "Try without installation" patch the file<br/>
-					<code>/usr/share/ubiquity/zsys-setup</code><br/>
-					with root rights using this patch file:
-					<a href="zsys-setup.patch">zsys-setup.patch</a>
-				</p>
-				<p>
-					to patch the file open a terminal and type<br/>
-					<code>wget https://AndiWeiss.github.io/projects/serverinstall/zsys-setup.patch</code><br/>
-					<code>cd /usr/share/ubiquity</code><br/>
-					<code>sudo patch -p1 < /home/xubuntu/zsys-setup.patch</code>
-				</p>
-				<p>
-					This patch modifies the zfs initialization script in a way that
-					the swap partition is as large as the physical ram of the machine.
-				</p>
-				<p>
-					After applying the patch the stick is prepared for installation.
-					You can start the installation either with a new boot or without
-					rebooting by using the install ubuntu icon.
-				</p>
-				<p>
-					If you regulary work in Linux it's easy to have a look on that
-					file on another linux machine. After saving the file in the
-					life system shut down the life system and connect the USB stick
-					to your working linux system. In a default environment your
-					system will mount the stick under <code>/media/&lt;user&gt;/ventoy</code>
-				</p>
-				<p>
-					create a directory for temporary mounting of the persitence file<br/>
-					<code>mkdir pers</code>
-				</p>
-				<p>
-					Now mount the persistence file<br/>
-					<code>sudo mount /dev/media/&lt;user&gt;/ventoy/persistence.dat pers</code><br/>
-					In the case that you have chosen a different filename use that one.
-				</p>
-				<p>
-					Now you have access to your modified zsys-setup. You find it in<br/>
-					<code>pers/upper/usr/share/ubiquity/zsys-setup</code>
-				</p>
-				<h4>Some additional findings concerning the partitioning script</h4>
-					<p>
-						I tried hard to get the installation doing all the things for having
-						a separate data tank. But it always failed on grub installation.
-						That's the reason why this howto just changes the swap partition size
-						and does the additional pool handling after base installation but before
-						starting the installed system the first time.
-					</p>
+		<h2 id="partitioning">Partition script modification</h2>
+			<p>
+				As mentioned above the default partitioning script of the
+				ubuntu installation medium creates a swap partition of 2G.
+				If the system shall do suspend to disk the swap partition is
+				used to store the complete RAM content. Knowing this leads to
+				the conclusion that 2G is - in most case - much to small.
+			</p>
+			<p>
+				As solution I first do a modification on the USB stick. The
+				stick creation process explained above leads to a persistent
+				storage in that boot system. So I boot the live stick and
+				change the required file. Since then this modified file is used
+				for partitioning.
+			</p>
+			<p>
+				After booting your future server system from the USB stick
+				with "Try without installation" patch the file
+				<code>/usr/share/ubiquity/zsys-setup</code>
+				with root rights using this patch file:
+				<a href="zsys-setup.patch">zsys-setup.patch</a>
+			</p>
+			<p>
+				to apply the patch open a terminal and type
+<pre>
+wget https://andiweiss.github.io/projects/serverinstall/zsys-setup.patch
+cd /usr/share/ubiquity
+sudo patch -p1 &lt; /home/xubuntu/zsys-setup.patch
+</pre>
+			</p>
+			<p>
+				This patch modifies the zfs initialization script in a way that
+				the swap partition is as large as the physical ram of the machine.
+			</p>
+			<p>
+				After applying the patch the stick is prepared for installation.
+				You can start the installation either with a new boot or without
+				rebooting by using the install ubuntu icon.
+			</p>
+			<p>
+				If you regulary work in Linux it's easy to have a look on that
+				file on another linux machine. After saving the file in the
+				life system shut down the life system and connect the USB stick
+				to your working linux system. In a default environment your
+				system will mount the stick under <code>/media/&lt;user&gt;/ventoy</code>
+			</p>
+			<p>
+				create a directory for temporary mounting of the persitence file
+<pre>
+mkdir pers
+</pre>
+			</p>
+			<p>
+				Now mount the persistence file
+<pre>
+sudo mount /dev/media/&lt;user&gt;/ventoy/persistence.dat pers
+</pre>
+				In the case that you have chosen a different filename use that one.
+			</p>
+			<p>
+				Now you have access to your modified zsys-setup. You find it in
+				<code>pers/upper/usr/share/ubiquity/zsys-setup</code>
+			</p>
+		<h2 id="part_issue">Partitioning issue</h2>
+			<p>
+				I tried hard to get the installation doing all the things for having
+				a separate data tank. But it always failed on grub installation.
+				That's the reason why this howto just changes the swap partition size
+				and does the additional pool handling after base installation but before
+				starting the installed system the first time.
+			</p>
 						
-
-		<h2>Installation process</h2>
+	<h1 id="installation">Installation process</h1>
+		<p>
+			I recommend doing the installation out of the life system, not the
+			<code>install xubuntu</code> possibility.
+		</p>
+		<p>
+			Reason for that is to be able to add the data device before booting
+			into the new installed system. The actual installer does not give the
+			possibility to add an additional zfs pool with different features
+			like mirroring or raid. The actual installer just puts everything on
+			one hard disk / ssd.
+		</p>
+		<p>
+			<em>Do the installation with only the future boot disk connected!</em>
+		</p>
+		<p>
+			Do the installation in the regular way.
+			We take care for moving the user data later.
+		</p>
+		<p>
+			Just keep care for one Window:
+		</p>
+		<p>
+			In the Window "Installation type" you have to chose "Advanced
+			Features ...". In the now opened window select "EXPERIMENTAL:
+			Erase disk and use ZFS". Then select the device you want to boot
+			from.
+		</p>
+		<p>
+			Now let the installer do its work. After that you'll have an
+			ubuntu system on one hard disk using ZFS wherever it is
+			possible. There's only one partition with another file system.
+			The EFI partition has to be formatted as VFAT.
+		</p>
+		<p>
+			After the installation process has been finished the system asks
+			for a reboot. I recommend not to do that directly but instead
+			prepare the HDDs you want to use for the data pool.
+		</p>
+		<h2 id="additional_hdds">Initialisation of the data pool</h2>
 			<p>
-				I recommend doing the installation out of the life system, not the
-				<code>install xubuntu</code> possibility.<br/>
-				Reason for that is to be able to add the data device before booting
-				into the new installed system. The actual installer does not give the
-				possibility to add an additional zfs pool with different features
-				like mirroring or raid. The actual installer just puts everything on
-				one hard disk / ssd.
-			</p>
-			<p>
-				Do the installation in the regular way.<br/>
-				<em>Do the installation with the boot disk only!</em><br/>
-				We take care for moving the user data later.<br/>
-				Just keep care for one Window:
-			</p>
-			<p>
-				In the Window "Installation type" you have to chose "Advanced
-				Features ...". In the now opened window select "EXPERIMENTAL:
-				Erase disk and use ZFS". Then select the device you want to boot
-				from.
-			</p>
-			<p>
-				Now let the installer do its work. After that you'll have an
-				ubuntu system on one hard disk using ZFS wherever it is
-				possible. There's only one partition with another file system.
-				The EFI partition must not be converted to ZFS. This one has
-				to stay on VFAT.
-			</p>
-			<p>
+				After the completion of the basic installation process
 				I hotplug the harddisk or harddisks for the server data pool
 				while still running the life system used for installation.
 				After the disks have been detected I use a commandline shell
 				to create the pool and the required data sets.
 			</p>
 			<p>
-				First step: import the already existing pools:<br/>
-				<code>sudo zpool import -R /target rpool</code><br/>
-				<code>sudo zpool import -R /target bpool</code>
+				First step: import the already existing pools:
 			</p>
+<pre>
+sudo zpool import -R /target rpool
+sudo zpool import -R /target bpool
+</pre>
 			<p>
-				Second step: create the data tank<br/>
-				For pool creation I use nearly the same parameters as used for rpool
-				creation:
-				<code>
-<pre>sudo zpool create -f \
+				Second step: create the data tank. For pool creation I use nearly
+				the same parameters as used for rpool creation:
+<pre>
+sudo zpool create -f \
 	-o ashift=12 \
 	-o autotrim=on \
 	-O compression=lz4 \
@@ -377,7 +365,6 @@
 	-O sync=disabled \
 	tank0 /dev/disk/by-id/&lt;your_id_here&gt;
 </pre>
-				</code>
 				Checking this against the creation of <code>rpool</code> you'll face only
 				two differences:
 				<ul>
@@ -385,73 +372,101 @@
 					<li>no alternative mount point is defined (no <code>-R</code> is given)</li>
 				</ul>
 				If the data pool shall have mirroring, raid or other fancy
-				modes just adapt the parameters to your needs. Please keep in mind:<br/>
-				<em>DO NOT</em> use <code>/dev/sd*</code>code> for the pool creation!<br/>
+				modes just hotplug the required disks andadapt the parameters to your needs.
+				Please keep in mind:
+			</p>
+			<p>
+				<em>DO NOT</em> use <code>/dev/sd*</code> for the pool creation!
+			</p>
+			<p>
 				Check the entries in <code>/dev/disk/by-id/</code> for the drives you
-				want to use and use these links instead.<br/>
+				want to use and use these links instead.
+			</p>
+			<p>
 				By handing over the whole device zpool will first create a gpt partition
 				table, add two partitions - one with nearly the whole content plus
 				a small one containing some MB additional space. This is done to be able to
 				combine drives with small differences in the amount of sectors to one pool.
 				The large partition is used for zfs afterwards.
 			</p>
+		<h2 id="moving_userdata">Moving USERDATA</h2>
 			<p>
 				Third step is moving the initial user dataset. To do so we create a
 				snapshot of the base installed user data set and move this to
-				the new data pool.<br/>
-				<code>sudo zfs snapshot -r rpool/USERDATA@move</code><br/>
-				<code>sudo zfs send -R rpool/USERDATA@move | sudo zfs receive tank0/USERDATA</code><br/>
+				the new data pool.
+<pre>
+sudo zfs snapshot -r rpool/USERDATA@move
+sudo zfs send -R rpool/USERDATA@move | sudo zfs receive tank0/USERDATA
+</pre>
 				Now the snapshot is available on the additional pool. This snapshot contains
 				all properties of the original dataset. Parts of the properties are required
-				to have the regular ubuntu zfs mechanisms working.<br/>
-				Now the original data set can be destroyed:<br/>
-				<code>sudo zfs destroy -r rpool/USERDATA</code>
+				to have the regular ubuntu zfs mechanisms working.
 			</p>
 			<p>
+				Now the original data set can be destroyed:
+<pre>
+sudo zfs destroy -r rpool/USERDATA
+</pre>
 				If you only want to use the user data on the data tank you're done with the
 				data movement. If you want to have server data follow the next steps and add more
-				dependent on your requirements. I want to have <code>/srv</code> and <code>/var/www</code>
+				dependent on your requirements.
+			</p>
+		<h2 id="moving_serverdata">Moving other datasets</h2>
+			<p>
+				I want to have <code>/srv</code> and <code>/var/www</code>
 				on my data tank.
 			</p>
 			<p>
 				Fourth step: moving /srv on the data tank. Comparable procedure as with the
 				user data, but here the installation process uses an id in the created data sets.
 				So take care to replace &lt;ID&gt; by the id used in your instalation process.
-				You can read it with <code>zfs list</code><br/>
-				<code>sudo zfs snapshot -r rpool/ROOT/ubuntu_&lt;ID&gt;/srv@move</code><br/>
-				<code>sudo zfs send -R rpool/ROOT/ubuntu_&lt;ID&gt;/srv@move | sudo zfs receive tank0/srv</code><br/>
-				<code>sudo zfs destroy -r rpool/ROOT/ubuntu_&lt;ID&gt;/srv</code><br/>
+				You can read it with <code>zfs list</code>
+<pre>
+sudo zfs snapshot -r rpool/ROOT/ubuntu_&lt;ID&gt;/srv@move
+sudo zfs send -R rpool/ROOT/ubuntu_&lt;ID&gt;/srv@move | sudo zfs receive tank0/srv
+sudo zfs destroy -r rpool/ROOT/ubuntu_&lt;ID&gt;/srv
+</pre>
 				As the mountpoint in the original dataset is inherited from the upper dataset
-				we have to set the correct mountpoint here:<br/>
-				<code>sudo zfs set mountpoint=/srv tank0/srv</code>
+				we have to set the correct mountpoint here:
+<pre>
+sudo zfs set mountpoint=/srv tank0/srv
+</pre>
 			</p>
 			<p>
 				Fifth step: As mentioned I also want to get <code>/var/www</code> on the tank.
 				There is only one difference to moving the <code>/srv</code>: I want to create
 				<code>/var</code> first and then put <code>/var/www</code> on top. Just for having
-				a better overview.<br/>
-				So this is the command list for doing so:<br/>
-				<code>sudo zfs snapshot -r rpool/ROOT/ubuntu_&lt;ID&gt;/var/www@move</code><br/>
-				<code>sudo zfs create tank0/var -o canmount=off -o mountpoint=none</code><br/>
-				<code>sudo zfs send -R rpool/ROOT/ubuntu_&lt;ID&gt;/var/www@move | sudo zfs receive tank0/var/www</code><br/>
-				<code>sudo zfs destroy -r rpool/ROOT/ubuntu_&lt;ID&gt;/var/www</code><br/>
-				<code>sudo zfs set mountpoint=/var/www tank0/var/www</code><br/>
+				a better overview.
+			</p>
+			<p>
+				So this is the command list for doing so:
+<pre>
+sudo zfs snapshot -r rpool/ROOT/ubuntu_&lt;ID&gt;/var/www@move
+sudo zfs create tank0/var -o canmount=off -o mountpoint=none
+sudo zfs send -R rpool/ROOT/ubuntu_&lt;ID&gt;/var/www@move | sudo zfs receive tank0/var/www
+sudo zfs destroy -r rpool/ROOT/ubuntu_&lt;ID&gt;/var/www
+sudo zfs set mountpoint=/var/www tank0/var/www
+</pre>
 			</p>
 			<p>
 				Now we have to introduce the new pool to the system as bpool and rpool are.<br/>
-				<code>sudo zpool set cachefile= tank0</code><br/>
-				<code>sudo touch /target/etc/zfs/zfs-list.cache/tank0</code><br/>
-				<code>sudo zfs set sync=standard tank0</code><br/>
+<pre>
+sudo zpool set cachefile= tank0
+sudo touch /target/etc/zfs/zfs-list.cache/tank0
+sudo zfs set sync=standard tank0
+</pre>
 			</p>
 			<p>
 				Having this done tank0 is ready for usage, so now we export all pools
-				in the opposite order as we imported / created them:<br/>
-				<code>sudo zpool export tank0</code><br/>
-				<code>sudo zpool export bpool</code><br/>
-				<code>sudo zpool export rpool</code><br/>
+				in the opposite order as we imported / created them:
+<pre>
+sudo zpool export tank0
+sudo zpool export bpool
+sudo zpool export rpool
+</pre>
 			</p>
 
-		<h2>First boot of the fresh system</h2>
+		<h2 id="first_boot">First boot of the fresh system</h2>
 			<p>
 				The system has to be rebooted. You can do that fastest with
 				<code>sudo reboot</code><br/>
@@ -464,16 +479,28 @@
 			</p>
 			<p>
 				Hit enter again to reach a command line.<br/>
-				Then type <code>zpool import tank0</code> and <code>exit</code><br/>
+				Then type
+<pre>
+zpool import tank0
+exit
+</pre>
 				Now your system boots first time into the fresh installation.
 			</p>
+
+	<h1 id="configuration">System configuration</h1>
+		<p>
+			The initial system installation is deon now. There will be updates
+			available - these can either be installed first or last. The result
+			will be the same.
+		</p>
 
 		<h2>ssh server</h2>
 			<p>
 				Now the system has a state where I want to get remote access.
-				Therefore the next short step is the installation of the ssh
-				server.<br/>
-				<code>sudo apt install openssh-server</code>
+				Therefore my next step is the installation of the ssh server.
+<pre>
+sudo apt install openssh-server
+</pre>
 			</p>
 			<p>
 				In the case you want to replace an old server it may make sense
@@ -491,48 +518,54 @@
 				get rid of.
 			</p>
 			<p>
-				To get rid of these icons we have to enter two lines in<br/>
-				<code>/etc/fstab</code>
-			</p>
-			<p>
+				To get rid of these icons we have to enter two lines in
+				<code>/etc/fstab</code><br/>
 				This file has to be editied with root rights. Just add the two
-				lines<br/>
-				<code>LABEL=rpool	none	auto	noauto	0	0</code><br/>
-				<code>LABEL=bpool	none	auto	noauto	0	0</code>
+				lines
+<pre>
+LABEL=rpool	none	auto	noauto	0	0
+LABEL=bpool	none	auto	noauto	0	0
+</pre>
 			</p>
 			<p>
 				One thing I really like is the possibility to use pageup /
-				pagedown for searching the history. This is enabled in<br/>
-				<code>/etc/inputrc</code>
+				pagedown for searching the history.<br/>
+				This can be enabled in <code>/etc/inputrc</code>
 			</p>
 			<p>
 				As last little config issue I disable the bluetooth service. It
 				usually crashes during boot and I don't have a bluetooth device
-				connected to the server.<br/>
-				<code>sudo systemctl disable bluetooth</code>
+				connected to the server.
+<pre>
+sudo systemctl disable bluetooth
+</pre>
 			</p>
 
 		<h2>Configuration of suspend and hibernate</h2>
 			<p>
-				No the basics are done. We have a system booting from ZFS and
+				Now the basics are done. We have a system booting from ZFS and
 				the desktop is clean.
 			</p>
 			<p>
-				The next step to do is the configuration of suspend to RAM and
+				Next step to do is the configuration of suspend to RAM and
 				suspend to disk.
 			</p>
 			<p>
 				To get supend, hibernate and a combination of both full
-				functional we just have to install one official ubuntu package:<br/>
-				<code>sudo apt install uswsusp</code>
+				functional we just have to install one official ubuntu package:
+<pre>
+sudo apt install uswsusp
+</pre>
 			</p>
 			<p>
 				Having this package installed there is nothing to say against a
 				test of suspend to ram, disk or both.
 			</p>
 			<p>
-				To test suspend to RAM execute the command<br/>
-				<code>sudo s2ram</code>
+				To test suspend to RAM execute the command
+<pre>
+sudo s2ram
+</pre>
 			</p>
 			<p>
 				If everything is fine the system shuts down very fast.
@@ -541,8 +574,10 @@
 				but the screen saver password request.
 			</p>
 			<p>
-				Next try is suspend to disk. The command for doing that is<br/>
-				<code>sudo s2disk</code>
+				Next try is suspend to disk. The command for doing that is
+<pre>
+sudo s2disk
+</pre>
 			</p>
 			<p>
 				In this case shuting down needs a bit more time and the system
@@ -554,19 +589,22 @@
 			</p>
 			<p>
 				Last test for me is testing if the combination suspend to RAM
-				and to disk is also working fine. The related command is<br/>
-				<code>sudo s2both</code>
+				and to disk is also working fine. The related command is
+<pre>
+sudo s2both
+</pre>
 			</p>
 			<p>
-				After this the shut down looks simular as in s2disk. Shutting
-				down needs the same time as in s2disk. But as long as you don't
-				pull the power cord the system will start up in the same time
-				as with s2disk.<br/>
+				After this the shut down looks simular as in <code>s2disk</code>.
+				Shutting down needs the same time as in <code>s2disk</code>.
+				But as long as you don't pull the power cord the system will
+				start up in the same time as with <code>s2disk</code>.<br/>
 				<em>If</em> you pull the power cord and plug it again the system
-				will again recover in the same state where you entered s2both.
+				will again recover in the same state where you called
+				<code>s2both</code>.
 			</p>
 			<p>
-				to have this as a sensefull feature you have to setup your BIOS
+				To have this as a sensefull feature you have to setup your BIOS
 				in the way that after power loss the computer starts up. In most
 				cases the default for this setting is "keep it off".
 			</p>
@@ -579,26 +617,34 @@
 				it now.
 			</p>
 			<p>
-				First thing to do is to install ethtool:<br/>
-				<code>sudo apt install ethtool</code>
+				First thing to do is to install ethtool:
+<pre>
+sudo apt install ethtool
+</pre>
 			</p>
 			<p>
-				Now we need to know which interface we want to configure:<br/>
-				<code>ip link</code><br/>
+				Now we need to know which interface we want to configure:
+<pre>
+ip link
+</pre>
 				We identify the interface, in my case this is <code>enp2s0</code>
 			</p>
 			<p>
 				Next step is to check the supported wake on lan modes and the
-				actually configured ones:<br/>
-				<code>sudo ethtool enp2s0 | grep Wake-on</code>
+				actually configured ones:
+<pre>
+sudo ethtool enp2s0 | grep Wake-on
+</pre>
+				On my server hardware this reports:
+<pre>
+Supports Wake-on: d
+Wake-on: d
+</pre>
 			</p>
 			<p>
-				On my server hardware this reports:<br/>
-				<code>Supports Wake-on: d</code><br/>
-				<code>Wake-on: d</code><br/>
+				This is sad, because this means: No Wake On Lan supported ...
 			</p>
 			<p>
-				This is sad, because this means: No Wake On Lan supported ...<br/>
 				<em>But:</em> the driver supports WOL, it just has to be
 				enabled. This is done by an additional kernel command line
 				parameter.
@@ -607,25 +653,31 @@
 				To get WOL working on the Atheros AR8171 the kernel requires
 				the additional commandline paramter <code>alx.enable_wol=1</code>.
 				To add this parameter edit the file <code>/etc/default/grub</code>
-				with root rights. Here you find a line<br/>
-				<code>GRUB_CMDLINE_LINUX_DEFAULT="&lt;some_parameters&gt;"</code>
-			</p>
-			<p>
+				with root rights. Here you find a line
+<pre>
+GRUB_CMDLINE_LINUX_DEFAULT="&lt;some_parameters&gt;"
+</pre>
 				in this line add <code>alx.enable_wol=1</code> with  leading
 				blank in front of the second quotation mark. After doing that
-				execute the command<br/>
-				<code>sudo update-grub</code><br/>
+				execute the command
+<pre>
+sudo update-grub
+</pre>
 				to overtake the change.
 			</p>
 			<p>
-				Now execute a reboot, open a terminal and try the command<br/>
-				<code>sudo ethtool enp2s0 | grep Wake-on</code><br/>
+				Now execute a reboot, open a terminal and use the command
+<pre>
+sudo ethtool enp2s0 | grep Wake-on
+</pre>
 				again.
 			</p>
 			<p>
-				The new result is:<br>
-				<code>Supports Wake-on: pg</code><br/>
-				<code>Wake-on: pg</code><br/>
+				The new result is:
+<pre>
+Supports Wake-on: pg
+Wake-on: pg
+</pre>
 			</p>
 			<p>
 				So now Wake On Lan is activated on
@@ -639,8 +691,8 @@
 				in systemd.
 			</p>
 			<p>
-				To create that service create the file<br/>
-				<code>/etc/systemd/system/wol.service</code><br/>
+				To create that service create the file
+				<code>/etc/systemd/system/wol.service</code>
 				with root rights. This file has to contain:
 <pre>
 [Unit]
@@ -653,21 +705,26 @@ ExecStart=/sbin/ethtool -s enp2s0 wol g
 [Install]
 WantedBy=basic.target
 </pre>
-				Then enable the service with<br/>
-				<code>sudo systemctl enable wol.service</code>
+				Then enable the service with
+<pre>
+sudo systemctl enable wol.service
+</pre>
 			</p>
 			<p>
-				After a reboot ethtool reports<br/>
-				<code>Supports Wake-on: pg</code><br/>
-				<code>Wake-on: g</code>
-			</p>
-			<p>
+				After a reboot ethtool reports
+<pre>
+Supports Wake-on: pg
+Wake-on: g
+</pre>
 				<em>This</em> is what we want to get.
 			</p>
 			<p>
 				Testing the feature can be done with another linux system.
-				I recommend to use wakeonln which has to be installed with<br/>
-				<code>sudo apt install wakeonlan</code>
+				I recommend to use wakeonlan which has to be installed with
+<pre>
+sudo apt install wakeonlan
+</pre>
+				on another linux machine in the same network.
 			</p>
 			<p>
 				The previous used command <code>ip link</code> does not only
@@ -679,8 +736,12 @@ WantedBy=basic.target
 			<p>
 				To try if wake on lan is functional put your server to sleep
 				e.g. with <code>sudo s2ram</code>. Then, on the other machine,
-				use <code>wakeonlan 11:22:33:44:55:66</code> to wake it up again.
-				Take care to use the mac address of youre server. Another thing
+				use
+<pre>
+wakeonlan 11:22:33:44:55:66
+</pre>
+				to wake it up again.
+				Take care to use the mac address of your server. Another thing
 				you need to know is that the magic packet used for waking up a
 				system is not routed over wifi, so you have to use a computer
 				connected to the lan.
@@ -695,13 +756,15 @@ WantedBy=basic.target
 			</p>
 			<p>
 				First thing to prepare nfs shares is the installtion of the
-				nfs server:<br/>
-				<code>sudo apt install nfs-kernel-server</code><br/>
+				nfs server:
+<pre>
+sudo apt install nfs-kernel-server
+</pre>
 			</p>
 			<p>
 				I decided to use the zfs mechanisms for exporting nfs shares.
 				Therefore exporting the filesystems is done with zfs properties,
-				not in /etc/exports.
+				not in <code>/etc/exports</code>.
 			</p>
 			<p>
 				I'm going to show the export with my folder containing the mp3
@@ -709,25 +772,27 @@ WantedBy=basic.target
 			</p>
 			<p>
 				First I have to create that dataset:
-				<code>sudo zfs create tank0/srv/music</code>
-			</p>
-			<p>
-				by creating this dataset there's automatically a directory<br/>
-				<code>/srv/music</code><br/>
+<pre>
+sudo zfs create tank0/srv/music
+</pre>
+				By creating this dataset there's automatically a directory
+				<code>/srv/music</code>
 				available. Take care to set the access (user, group, read,
 				write, execute, ...) according your needs.
 			</p>
 			<p>
-				Now we simply export this filesystem:<br/>
-				<code>sudo zfs set sharenfs=on tank0/srv/music</code>
-			</p>
-			<p>
+				Now we simply tell zfs to export this filesystem:
+<pre>
+sudo zfs set sharenfs=on tank0/srv/music
+</pre>
 				After doing so this share can be mounted on another linux
-				machine:<br/>
-				<code>sudo mount server:/srv/music music</code>
+				machine:
+<pre>
+sudo mount server:/srv/music music
+</pre>
 			</p>
 
-	<h2>Automatic shutdown</h2>
+	<h1 id="shutdown">Automatic shutdown</h1>
 		<p>
 			Now the basic system is complete.
 			User can be added and their home directory will be created
@@ -748,16 +813,20 @@ WantedBy=basic.target
 			this update - the system requires a reboot this shall be done, too.
 		</p>
 
-		<h3>Detection of nfs mounts</h3>
+		<h2 id="nfs_detection">Detection of nfs mounts</h2>
 			<p>
 				To detect how many nfs mounts are actually in use I use the
 				program netstat. This is included in the ubuntu package
-				net-tools, which is not installed as default. So we have to install it:<br/>
-				<code>sudo apt install net-tools</code>
+				net-tools, which is not installed as default. So we have to install it:
+<pre>
+sudo apt install net-tools
+</pre>
 			</p>
 			<p>
-				To get a list of active nfs connections I use<br/>
-				<code>netstat -n --inet</code><br/>
+				To get a list of active nfs connections I use
+<pre>
+netstat -n --inet
+</pre>
 				I use the <code>-n</code> to get numeric output. Otherwise there has
 				to be a functional nameserver in your network. Additionally we need
 				the ip address of the client lateron.
@@ -768,9 +837,10 @@ WantedBy=basic.target
 			</p>
 			<p>
 				Taking a look into <code>/etc/services</code> we find the ports used for
-				nfs. This is 2049.<br/>
-				With this we use<br/>
-				<code>netstat -n --inet | grep ':2049\W'</code><br/>
+				nfs. This is 2049. With this I use
+<pre>
+netstat -n --inet | grep ':2049\W'
+</pre>
 				to get only the lines with active nfs connections.
 			</p>
 			<p>
@@ -791,18 +861,22 @@ WantedBy=basic.target
 			</p>
 			<p>
 				To be able to ping the system we need its ip address.
-				To get this we use the output of the found line of netstat and kill everything but the ip address:<br/>
-				<code>netstat -n --inet | grep ':2049\W' | sed -n 's|.*:2049\W*\([^:]*\):.*|\1|g;p'</code>
+				To get this we use the output of the found line of netstat and kill everything but the ip address:
+<pre>
+netstat -n --inet | grep ':2049\W' | sed -n 's|.*:2049\W*\([^:]*\):.*|\1|g;p'
+</pre>
 			</p>
 
-		<h3>Detection of active users</h3>
+		<h2 id="user_detection">Detection of active users</h2>
 			<p>
-				Getting the information if users are logged in is easy:<br/>
-				<code>users</code><br/>
+				Getting the information if users are logged in is easy:
+<pre>
+users
+</pre>
 				prints all users who are logged in.
 			</p>
 
-		<h3>Checking for updates</h3>
+		<h2 id="updates">Checking for updates</h2>
 			<p>
 				Easiest thing is not checking for updates but just doing the updates.
 				To do so we tell the system to
@@ -814,14 +888,14 @@ WantedBy=basic.target
 				</ul>
 			</p>
 
-		<h3>Reboot if required</h3>
+		<h2 id="reboot">Reboot if required</h2>
 			<p>
 				The update process creates a file <code>/var/run/reboot-required</code>
 				if a reboot is required. If this file is detected the server will - instead of
 				go to suspend - do a reboot.
 			</p>
 
-		<h3>Wake up the system for maintenance</h3>
+		<h2 id="maintenance">Wake up for maintenance</h2>
 			<p>
 				In my case the server is often not used for a long time.
 				To avoid having a too long tim without updates the system
@@ -835,47 +909,49 @@ WantedBy=basic.target
 			</p>
 			<p>
 				This is done in the script before shutting down the system
-				with the command<br/>
-				<code>rtcwake -m no -t `date --date='7 days 04:00' +%s`</code><br/>
+				with the command
+<pre>
+rtcwake -m no -t `date --date='7 days 04:00' +%s`
+</pre>
 				This sets the alarm in the rtc which then will start up the system.
 			</p>
 
-		<h3>Putting it together</h3>
-			<p>
-				Now we know how to get the information if we have to shut down.
-				These things have to be used for putting it all together.
-				We need to know if a user is actually logged in and if a share is
-				actually in use.<br/>
-				When this is not the case for a certain time the system shall shut down.
-			</p>
-			<p>
-				As this is time based we create a cron job for that.
-				In the cron job, once per minute, we collect the information.
-				Then we store the information when we first have no keep alive
-				status anymore. If this doesn't change for the defined time we
-				do a <code>s2both</code> and the system gets suspended.
-			</p>
-			<p>
-				I provide a script for the automatic shutdown:<br/>
-				<a href="autosuspend.sh">autosuspend.sh</a><br/>
-				Save this script with root rights as <code>/bin/autosuspend.sh</code>
-				and don't forget to <code>sudo chmod +x /bin/autosuspend.sh</code>
-				to make it executable.
-			</p>
-			<p>
-				<code>wget https://AndiWeiss.github.io/projects/serverinstall/autosuspend.sh</code><br/>
-				<code>chmod a+x autosuspend.sh</code><br/>
-				<code>sudo chown root:root autosuspend.sh</code><br/>
-				<code>sudo mv autosuspend.sh /bin</code>
-			</p>
-			<p>
-				After that we create a cronjob calling this script every minute.
-				Therefore open your <code>/etc/crontab</code> with root rights
-				and add the line<br/>
-				<code>* * * * * root /bin/autosuspend.sh</code><br/>
-				With this the script is executed each minute and then checks
-				if the system shall stay active or not.
-			</p>
+	<h2 id="all_together">Putting it together</h3>
+		<p>
+			Now we know how to get the information if we have to shut down.
+			These things have to be used for putting it all together.
+			We need to know if a user is actually logged in and if a share is
+			actually in use.<br/>
+			When this is not the case for a certain time the system shall shut down.
+		</p>
+		<p>
+			As this is time based we create a cron job for that.
+			In the cron job, once per minute, we collect the information.
+			Then we store the information when we first have no keep alive
+			status anymore. If this doesn't change for the defined time we
+			do a <code>s2both</code> and the system gets suspended.
+		</p>
+		<p>
+			I provide a script for the automatic shutdown:<br/>
+			<a href="autosuspend.sh">autosuspend.sh</a><br/>
+			Save this script with root rights as <code>/bin/autosuspend.sh</code>
+			and don't forget to <code>sudo chmod +x /bin/autosuspend.sh</code>
+			to make it executable.
+<pre>
+wget https://AndiWeiss.github.io/projects/serverinstall/autosuspend.sh
+chmod a+x autosuspend.sh
+sudo chown root:root autosuspend.sh
+sudo mv autosuspend.sh /bin
+</pre>
+			After that we create a cronjob calling this script every minute.
+			Therefore open your <code>/etc/crontab</code> with root rights
+			and add the line
+<pre>
+* * * * * root /bin/autosuspend.sh
+</pre>
+			With this the script is executed each minute and then checks
+			if the system shall stay active or not.
+		</p>
 </body>
 </html>
 <!--
