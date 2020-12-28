@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>ARK server installation on Ubuntu 20.04</title>
+	<meta name="ARK server on Ubuntu" content="ARK server installation on Ubuntu 20.04">
+</head>
+
+<body>
+	<header>
+		<h1>ARK server installation on Ubuntu 20.04</h1>
+	</header>
+
+	<nav>
+		<ul>
+			<li><a href="#introduction">Introduction</a></li>
+			<li><a href="#installation">Installation</a></li>
+			<ul>
+				<li><a href="#preconditions">Preconditions</a></li>
+				<li><a href="#arkmanager">Install the ARK manager</a></li>
+				<li><a href="#gs_inst">Install the ARK server</a></li>
+				<li><a href="#config">Configure the server</a></li>
+			</ul>
+			<li><a href="#admin">Administrate the server</a></li>
+			<ul>
+				<li><a href="#am_start">arkmanager start</a></li>
+				<li><a href="#am_status">arkmanager status</a></li>
+				<li><a href="#am_stop">arkmanager stop</a></li>
+			</ul>
+			<li><a href="#next_steps">Next steps</a></li>
+		</ul>
+	</nav>
+
+	<h1 id="introduction">Introduction</h1>
+		<p>
+			The survival game "ARK" has been given for free by Epic Games in June 2020.
+			We started playing it - both local and on servers operated by friends of us.
+			After two weeks of vacation without the possibility to play we where rather
+			disappointed that a lot of things got lost during that time.
+			We continued playing localy then - in this case the game stops as soon as
+			the player exits. But that's not comparable to the multi player game.
+		</p>
+		<p>
+			So we decided to bring up an ARK server locally on our home server.
+			This ARK server, so the intention, shall be started when we want to play
+			and stopped when the last of us stops playing. We don't want to have it
+			public in the internet, a local server is fine for us.
+		</p>
+		<p>
+			So this page shows how to set up the ARK server on an Ubuntu based machine.
+			To have the administration easy I am using the ark manager.
+		</p>
+		<p>
+			<a href="https://github.com/arkmanager/ark-server-tools">github home of ark manager</a>
+		</p>
+			<a href="https://github.com/arkmanager/arkmanager-docs">documentation of ark manager</a>
+		<p>
+		</p>
+
+	<h1 id="installation">Installation</h1>
+		<p>
+			Before doing the game server installation there are some preconditions
+			to fulfill.
+		</p>
+
+		<h2 id="preconditions">Preconditions</h2>
+			<p>
+				First thing is setting upe the regular Ubuntu installation as you want
+				to get it.
+			</p>
+			<p>
+				After that the system requires some additional packages,
+				all coming out of the official Ubuntu resources:
+<pre>
+sudo apt install curl libc6-i386 lib32gcc1 libsdl2-2.0-0:i386 steamcmd
+</pre>
+			</p>
+			<p>
+				Next thing to do is the cration of the user which shall run the
+				ARK server. I call it <code>steam</code>. My decission is to give this
+				user the uid 10000. The following commands have to be executed with an
+				acoount having sudo rights.
+<pre>
+sudo adduser --uid 10000 steam
+</pre>
+				Answer the questions of this command to give all details you want to provide.
+			</p>
+			<p>
+				This new user requires sudo abilities
+<pre>
+sudo usermod -aG sudo steam
+</pre>
+			</p>
+			<p>
+				Now the steam client has to be installed. This is also included in the
+				standard Ubuntu resources.
+<pre>
+sudo apt install steamcmd
+</pre>
+				The steam license has to be agreed during this installation.
+			</p>
+			<p>
+				This is the last thing to do with the regular account. The following part
+				has to be done with the user <code>steam</code>, so either log off and
+				log in as steam or do <code>su steam</code> and <code>cd ~</code>.
+			</p>
+
+		<h2 id="arkmanager">Install the ARK manager</h2>
+			<p>
+				First we do an update of the steam client and check if it works fine.
+<pre>
+steamcmd
+&lt;wait for the prompt "Steam&gt;"&gt;
+login anonymous
+&lt;there should be no error and no warning&gt;
+quit
+</pre>
+			</p>
+			<p>
+				Now we do the installation of ARK manager. I want to start the
+				game server manually, so I use
+<pre>
+curl -sL https://git.io/arkmanager | sudo bash -s steam
+</pre>
+				If the game server shall be started together with the machine
+				you have to use
+<pre>
+curl -sL https://git.io/arkmanager | sudo bash -s steam --install-service
+</pre>
+			</p>
+			<p>
+				The ARK manager requires some settings to be able to run on
+				an Ubuntu system. Edit the file <code>/etc/arkmanager/arkmanager.cfg</code>
+				and change the tag as explained here:
+				<ul>
+					<li><code>steamcmdroot="/usr/games"</code></li>
+					<li><code>steamcmdexec="steamcmd"</code></li>
+					<li><code>steamcmd_appinfocache="/home/steam/.steam/appcache/appinfo.vdf"</code></li>
+					<li><code>steamcmd_workshoplog="/home/steam/.steam/logs/workshop_log.txt"</code></li>
+				</ul>
+				Add the lines:
+				<ul>
+					<li><code>arkflag_crossplay=true</code></li>
+					<li><code>arkflag_NoBattlEye=true</code></li>
+				</ul>
+				The first line allows connecting with an Epic Game account.
+				The second line disables the BattleEye feature.
+				This has to be done if neither your server is
+				a machine with direct internetconnection nor your router
+				routing table is adapted to ARK needs. I don't explain
+				the routing config here because we want to have the game server
+				only in our home network.
+			</p>
+			<p>
+				Now the game server requires your local configuration.
+				Edit the file <code>/etc/arkmanager/instances/main.cfg</code>
+				and adapt these tags to your wishes.
+				<ul>
+					<li><code>ark_SessionName</code></li>
+					<li><code>serverMap</code></li>
+					<li><code>ark_ServerPassword</code></li>
+					<li><code>ark_ServerAdminPassword</code></li>
+					<li><code>ark_MaxPlayers</code></li>
+				</ul>
+			</p>
+
+		<h2 id="gs_inst">Install the ARK server</h2>
+			<p>
+				Now we're ready for the game server installation.<br/>
+				Be patient! This may take <em>LONG</em>!
+<pre>
+arkmanager install
+</pre>
+			</p>
+
+	<h1 id="config">Configure the server</h1>
+		<p>
+			We prefer playing the server in a way that no player can
+			harm another player. Therefore we want to configure the server
+			to PvE and disable "friendly fire".
+		</p>
+		<p>
+			To configure the server to PvE edit the file
+			<code>ARK/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini</code>
+			and add <code>serverPVE=True</code>
+			to the section
+			<code>[ServerSettings]</code>.
+		</p>
+		<p>
+			With this you can't harm players of different teams. But you
+			can still harm players of your own team.
+		</p>
+		<p>
+			If you don't want that edit the file
+			<code>ARK/ShooterGame/Saved/Config/LinuxServer/Game.ini</code>.
+			Add the config tag
+			<code>bPvEDisableFriendlyFire=True</code>
+			to the section
+			<code>[/script/shootergame.shootergamemode]</code>.
+			In the default installation this file is empty. So in that case
+			you have to write the following lines into the file:
+<pre>
+[/script/shootergame.shootergamemode]
+bPvEDisableFriendlyFire=True
+</pre>
+		</p>
+		<p>
+			Other configuration possibilites can be found in various
+			pages in the internet :-)
+		</p>
+
+	<h1 id="admin">Administrate the server</h1>
+		<p>
+			After having the game server installed there are some commands
+			to supervise the game. Here I show the most important once.
+		</p>
+
+		<h2 id="am_start">arkmanager start</h2>
+			<p>
+				Use this command to start the server.
+				<em>The server is not directly usable!</em>
+				It takes several minutes until the server can be used.
+				If it is accessable can be detected with <code>arkmanager status</code>.
+			</p>
+
+		<h2 id="am_status">arkmanager status</h2>
+			<p>
+				This command shows the status of the ark server.
+				As long as the server is not accessable it will print
+<pre>
+Running command 'status' for instance 'main'
+ Server running:   Yes 
+ Server PID:   99315 
+ Server listening:   No 
+ Server build ID:   6011539 
+ Server version:   320.38 
+</pre>
+				The values vary dependent on your system - even with each start
+			</p>
+			<p>
+				This is an example when the server is accessable:
+<pre>
+Running command 'status' for instance 'main'
+ Server running:   Yes 
+ Server PID:   99315 
+ Server listening:   Yes 
+Server Name: XxXxXxX - (v320.38)
+Steam Players: 0 / 70
+Active Steam Players: 0
+ Server online:   Yes 
+ ARKServers link:   http://arkservers.net/server/111.222.33.44:27015 
+ Steam connect link:   steam://connect/111.222.33.44:27015 
+Active Players: 0
+ Server build ID:   6011539 
+ Server version:   320.38 
+</pre>
+				The IP addresses are the addresses of the server as they
+				are seen from the internet.<br/>
+				So in the case your machine is
+				directly connected you'll see the IP of your machine,
+				otherwise you'll see the IP your router received.
+			</p>
+
+		<h2 id="am_stop">arkmanager stop</h2>
+			<p>
+				Use this command to stop the server.
+				The server saves the actual game during shutdown.
+			</p>
+
+	<h1 id="next_steps">Next steps</h1>
+		<p>
+			Next goal for my personal ARK server is to add it to the automatic
+			shut down mechanism. That means that the automatic shut down
+			- or better - suspend shall only be done if there's no player
+			connected to the server.
+		</p>
+</body>
+</html>
