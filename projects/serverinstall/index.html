@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<title>home server based on Ubuntu 20.04 with ZFS</title>
-	<meta name="Ubuntu home server" content="home server based on Ubuntu 20.04 with ZFS">
+	<meta name="Description" content="linux home server, zfs, wake on lan, Qualcomm Atheros QCA8171, auto suspend"/>
 </head>
 
 <body>
@@ -403,9 +403,10 @@ sudo zfs send -R rpool/USERDATA@move | sudo zfs receive tank0/USERDATA
 				to have the regular ubuntu zfs mechanisms working.
 			</p>
 			<p>
-				Now the original data set can be destroyed:
+				Now the original data set and the new snapshot can be destroyed:
 <pre>
 sudo zfs destroy -r rpool/USERDATA
+sudo zfs destroy -r tank0/USERDATA@move
 </pre>
 				If you only want to use the user data on the data tank you're done with the
 				data movement. If you want to have server data follow the next steps and add more
@@ -422,9 +423,11 @@ sudo zfs destroy -r rpool/USERDATA
 				So take care to replace &lt;ID&gt; by the id used in your instalation process.
 				You can read it with <code>zfs list</code>
 <pre>
-sudo zfs snapshot -r rpool/ROOT/ubuntu_&lt;ID&gt;/srv@move
-sudo zfs send -R rpool/ROOT/ubuntu_&lt;ID&gt;/srv@move | sudo zfs receive tank0/srv
-sudo zfs destroy -r rpool/ROOT/ubuntu_&lt;ID&gt;/srv
+export MyId=`zfs list | grep ROOT/ubuntu_.*/\$ | sed -n 's|[^_]*_\(\w*\).*|\1|g;p'`
+sudo zfs snapshot -r rpool/ROOT/ubuntu_${MyId}/srv@move
+sudo zfs send -R rpool/ROOT/ubuntu_${MyId}/srv@move | sudo zfs receive tank0/srv
+sudo zfs destroy -r rpool/ROOT/ubuntu_${MyId}/srv
+sudo zfs destroy -r tank0/srv@move
 </pre>
 				As the mountpoint in the original dataset is inherited from the upper dataset
 				we have to set the correct mountpoint here:
@@ -441,11 +444,34 @@ sudo zfs set mountpoint=/srv tank0/srv
 			<p>
 				So this is the command list for doing so:
 <pre>
-sudo zfs snapshot -r rpool/ROOT/ubuntu_&lt;ID&gt;/var/www@move
+sudo zfs snapshot -r rpool/ROOT/ubuntu_${MyId}/var/www@move
 sudo zfs create tank0/var -o canmount=off -o mountpoint=none
-sudo zfs send -R rpool/ROOT/ubuntu_&lt;ID&gt;/var/www@move | sudo zfs receive tank0/var/www
-sudo zfs destroy -r rpool/ROOT/ubuntu_&lt;ID&gt;/var/www
+sudo zfs send -R rpool/ROOT/ubuntu_${MyId}/var/www@move | sudo zfs receive tank0/var/www
+sudo zfs destroy -r rpool/ROOT/ubuntu_${MyId}/var/www
+sudo zfs destroy -r tank0/var/www@move
 sudo zfs set mountpoint=/var/www tank0/var/www
+</pre>
+			</p>
+			<p>
+				Several of the zfs properties are now set to source
+				<code>received</code> instead of the usual
+				<code>local</code>.
+				This leads to none functional revert mechanism. If a
+				revert is executed none of the datasetes having this
+				source will be mounted. That's not good at all.
+			</p>
+			<p>
+				To fix that I use a bash command line to set each
+				property which has the source <code>received</code>
+				on the value it has. Setting the property is done with
+				<code>sudo zfs get &lt;some_parameters&gt;</code>. But
+				as I don't want to do that by hand for each property
+				this is the line to do it automatically in bash:
+<pre>
+zfs get all -r tank0 | grep received\$ | \
+while read -r ds prop val drop;\
+	do sudo zfs set ${prop}=${val} ${ds}; \
+done
 </pre>
 			</p>
 			<p>
