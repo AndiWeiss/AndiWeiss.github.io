@@ -26,7 +26,7 @@
 				<li><a href="#partitioning">Partition script modification</a></li>
 				<li><a href="#part_issue">Partitioning issue</a></li>
 			</ul>
-			<li><a href="#installation">Installation proces</a></li>
+			<li><a href="#installation">Installation process</a></li>
 			<ul>
 				<li><a href="#additional_hdds">Initialisation of the data pool</a></li>
 				<li><a href="#moving_userdata">Moving USERDATA</a></li>
@@ -423,7 +423,7 @@ sudo zfs destroy -r tank0/USERDATA@move
 				So take care to replace &lt;ID&gt; by the id used in your instalation process.
 				You can read it with <code>zfs list</code>
 <pre>
-export MyId=`zfs list | grep ROOT/ubuntu_.*/\$ | sed -n 's|[^_]*_\(\w*\).*|\1|g;p'`
+export MyId=`zfs list | grep ROOT/ubuntu_.*/target\$ | sed -n 's|[^_]*_\(\w*\).*|\1|g;p'`
 sudo zfs snapshot -r rpool/ROOT/ubuntu_${MyId}/srv@move
 sudo zfs send -R rpool/ROOT/ubuntu_${MyId}/srv@move | sudo zfs receive tank0/srv
 sudo zfs destroy -r rpool/ROOT/ubuntu_${MyId}/srv
