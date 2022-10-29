@@ -138,30 +138,30 @@ else
 		logstring 3 "installing updates"
 		touch "${tmpfile}.update"
 		update_success=0
-		if apt-get update;
+		if apt update;
 		then
-			logstring 3 "apt-get updates --> OK"
-			if apt-get -yt $(lsb_release -cs)-security dist-upgrade;
+			logstring 3 "apt updates --> OK"
+			if apt -yt $(lsb_release -cs)-security dist-upgrade;
 			then
-				logstring 3 "apt-get -yt $(lsb_release -cs)-security dist-upgrade --> OK"
-				if apt-get --trivial-only dist-upgrade;
+				logstring 3 "apt -yt $(lsb_release -cs)-security dist-upgrade --> OK"
+				if apt --trivial-only dist-upgrade;
 				then
-					logstring 3 "apt-get --trivial-only dist-upgrade --> OK"
-					if apt-get autoclean;
+					logstring 3 "apt --trivial-only dist-upgrade --> OK"
+					if apt autoclean;
 					then
-						logstring 3 "apt-get autoclean --> OK"
+						logstring 3 "apt autoclean --> OK"
 						update_success=1
 					else
-						logstring 1 "apt-get autoclean --> FAILED"
+						logstring 1 "apt autoclean --> FAILED"
 					fi
 				else
-					logstring 1 "apt-get --trivial-only dist-upgrade --> FAILED"
+					logstring 1 "apt --trivial-only dist-upgrade --> FAILED"
 				fi
 			else
-				logstring 1 "apt-get -yt $(lsb_release -cs)-security dist-upgrade --> FAILED"
+				logstring 1 "apt -yt $(lsb_release -cs)-security dist-upgrade --> FAILED"
 			fi
 		else
-			logstring 1 "apt-get updates --> FAILED"
+			logstring 1 "apt updates --> FAILED"
 		fi
 		rm -f "${tmpfile}.update"
 		if [ "$update_success" -eq "1" ];
@@ -187,7 +187,7 @@ else
 		rtcwake -m no -t `date --date='7 days 04:00' +%s`
 
 		# then suspend
-		/usr/sbin/s2both
+		systemctl hybrid-sleep
 	else
 		# store new value
 		echo "$count" > "$tmpfile"

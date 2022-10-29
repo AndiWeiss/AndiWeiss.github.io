@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>home server based on Ubuntu 20.04 with ZFS</title>
+	<title>home server based on Ubuntu 22.04 with ZFS</title>
 	<meta name="Description" content="linux home server, zfs, wake on lan, Qualcomm Atheros QCA8171, auto suspend"/>
 </head>
 
 <body>
 	<header>
-		<h1>home server based on Ubuntu 20.04 with ZFS</h1>
+		<h1>home server based on Ubuntu 22.04 with ZFS</h1>
 	</header>
 	<nav>
 		<ul>
@@ -62,6 +62,31 @@
 			check if all things I had to find out to get my requirements
 			fullfilled still work on XUbuntu 20.04. And they did.
 		</p>
+		<p>
+			But time went by and meanwhile Ubuntu 22.04 is available.
+			So again I wanted to get everything on the same basis and tried
+			the installation on the server with this LTS version.
+			Sadly I struggled over some things:
+			<ul>
+				<li>Wake On Lan didn't work anymore</li>
+				<li>Ubuntu 22.04 doesn't install zsys anymore</li>
+			</ul>
+			After reading several problem reports on the zsys daemon I
+			decided not to install zsys - so the nice automatic rollback
+			feature is gone ...
+		</p>
+		<p>
+			This site <a href="https://github.com/ubuntu/zsys/issues/230">Don't use ZSYS</a>
+			explains why I decided not to use zsys anymore.<br>
+			I don't like to have known bugs on the server which may lead to a complete
+			removal of my user dataset ...
+		</p>
+		<p>
+			Additionally my boot disc changed.<br>
+			Instead of using an eSATA configuration I put a NVME drive
+			into a USB3 housing which supports the trim feature and
+			connect this to one of the USB3 ports.
+		</p>
 
 		<h2 id="preconditions">Preconditions</h2>
 			<p>
@@ -70,12 +95,13 @@
 			<ul>
 				<li>Mainboard: ASROCK B85M-ITX</li>
 				<li>Pentium G3440T</li>
-				<li>128G SSD for booting</li>
+				<li>256G NVME for booting</li>
+				<li>NVME USB3 housing supporting trim</li>
 				<li>4 harddisks as raid for data</li>
 			</ul>
 			<p>
 				I personally prefer XUbuntu, so I also need a bootable XUbuntu
-				20.04 USB stick.
+				22.04 USB stick.
 			</p>
 
 		<h2 id="requirements">Requirements</h2>
@@ -84,24 +110,24 @@
 			</p>
 			<ul>
 				<li>
-					In normal case the server shall be off. I don't like current
-					consumption when it is not in use.
+					In normal case the server shall be off.<br>
+					I don't like current consumption when it is not in use.
 				</li>
 				<li>
 					On request it shall be available FAST. So I want to use
 					suspend to RAM.
 				</li>
 				<li>
-					On power fail everything shall work smooth, so suspend to
-					RAM is not enough - the shutdown has to do a disk image,
-					too.
+					On power fail everything shall work smooth,<br>
+					so suspend to RAM is not enough - the shutdown has to do
+					a disk image, too.
 				</li>
 				<li>
-					The system has to provide Wake On Lan - I don't want to
-					push the button.
+					The system has to support Wake On Lan<br>
+					I don't want to push the button.
 				</li>
 				<li>
-					The supension shall be done automatically after some
+					The suspension shall be done automatically after some
 					minutes of idletime
 				</li>
 			</ul>
@@ -109,7 +135,7 @@
 		<h2 id="known_issues">Known issues</h2>
 			<ul>
 				<li>
-					during ubuntu 20.04 installation there is no possibility
+					during ubuntu 22.04 installation there is no possibility
 					to define the partition layout or to create data pools
 					with redundancy. Up to now I found no functional
 					modification to create the datapool automatically
@@ -118,7 +144,9 @@
 				<li>
 					(solved) The mainboard is equipped with a Qualcomm Atheros
 					AR8171 gigabit ethernet chip. This chip supports Wake On
-					Lan, but you have to tweak the linux system to enable it
+					Lan, but that feature is not in Ubuntu since kernel 5.15.<br>
+					I created a dkms packages to patch the kernel and build
+					the module on kernel update.
 				</li>
 				<li>
 					(solved) the ubuntu partitioning when using the
@@ -144,6 +172,12 @@
 				digits for the version.
 			</p>
 			<p>
+				<em>Hint:</em><br>
+				I faced an issue when trying to boot xubuntu 22.04.1
+				with Ventoy version 1.0.81 in UEFI mode!<br>
+				Others had that issue with Ventoy version 1.0.78. I tried 1.0.79 and it works.
+			</p>
+			<p>
 				Optional: check the SHA256 against the value given on the
 				website.<br/>
 				<code>sha256sum ventoy-x.y.z-linux.tar.gz</code><br/>
@@ -164,18 +198,21 @@
 			</p>
 			<p>
 				Insert an USB stick with enough space for the ubuntu iso file
-				plus a file for persistent data. I recommend to use a stick
-				with at least 8GB.<br/>
+				plus a file for persistent data.
+				<br>I recommend to use a stick
+				with at least 8GB.
 			</p>
 			<p>
 				run ventroy with the command<br/>
-				<code>sudo sh Ventoy2Disk.sh -I /dev/XXX</code><br/>
-				Replace XXX by the device name of your USB stick.
+				<code>sudo sh Ventoy2Disk.sh -I /dev/XXX -g</code><br/>
+				Replace XXX by the device name of your USB stick.<br>
+				The parameter <code>-g</code> creates a gpt partition scheme on the stick.<br>
+				This stick can be booted in oldstyle BIOS mode or in UEFI mode.
 			</p>
 			<p>
 				Your computer will remount the stick and show one partition
 				named<br/>
-				<code>ventoy</code>
+				<code>Ventoy</code>
 			</p>
 			<p>
 				Copy your ubuntu iso file on this USB stick.<br/>
@@ -186,7 +223,16 @@
 		<h2 id="persistency">Persistent data area creation</h2>
 			<p>
 				ventoy contains a plugin for persistent data creation on
-				bootable USB sticks. To prapare this execute the command<br/>
+				bootable USB sticks.
+			</p>
+			<p>
+				In general that's a good idea, but I faced
+				problems with firefox in the lifelinux when activating the
+				persistant data storage.<br>
+				Nevertheless I explain how this can be activated.
+			</p>
+			<p>
+				To prepare this execute the command<br/>
 				<code>sudo sh CreatePersistentImg.sh -s 1024 -t ext4 -l casper-rw</code>
 			</p>
 			<p>
@@ -208,7 +254,7 @@
 {
 	"persistence": [
 		{
-			"image": "/xubuntu-20.04.1-desktop-amd64.iso",
+			"image": "/xubuntu-22.04.1-desktop-amd64.iso",
 			"backend": "/persistence.dat",
 			"autosel": 1
 		}
@@ -241,14 +287,14 @@
 				with "Try without installation" patch the file
 				<code>/usr/share/ubiquity/zsys-setup</code>
 				with root rights using this patch file:
-				<a href="zsys-setup.patch">zsys-setup.patch</a>
+				<a href="zsys-setup_22.04.patch">zsys-setup_22.04.patch</a>
 			</p>
 			<p>
 				to apply the patch open a terminal and type
 <pre>
-wget https://andiweiss.github.io/projects/serverinstall/zsys-setup.patch
+wget https://andiweiss.github.io/projects/serverinstall/zsys-setup_22.04.patch
 cd /usr/share/ubiquity
-sudo patch -p1 &lt; /home/xubuntu/zsys-setup.patch
+sudo patch -p1 &lt; /home/xubuntu/zsys-setup_22.04.patch
 </pre>
 			</p>
 			<p>
@@ -276,7 +322,7 @@ mkdir pers
 			<p>
 				Now mount the persistence file
 <pre>
-sudo mount /dev/media/&lt;user&gt;/ventoy/persistence.dat pers
+sudo mount /media/&lt;user&gt;/Ventoy/persistence.dat pers
 </pre>
 				In the case that you have chosen a different filename use that one.
 			</p>
@@ -317,9 +363,8 @@ sudo mount /dev/media/&lt;user&gt;/ventoy/persistence.dat pers
 		</p>
 		<p>
 			In the Window "Installation type" you have to chose "Advanced
-			Features ...". In the now opened window select "EXPERIMENTAL:
-			Erase disk and use ZFS". Then select the device you want to boot
-			from.
+			Features ...". In the now opened window select "Erase disk and use ZFS".
+			Then select the device you want to boot from.
 		</p>
 		<p>
 			Now let the installer do its work. After that you'll have an
@@ -365,17 +410,17 @@ sudo zpool create -f \
 	-O sync=disabled \
 	tank0 /dev/disk/by-id/&lt;your_id_here&gt;
 </pre>
-				Checking this against the creation of <code>rpool</code> you'll face only
+				Checking this against the creation of <code>rpool</code> you'll see only
 				two differences:
 				<ul>
 					<li>the mount point is set to <code>none</code></li>
 					<li>no alternative mount point is defined (no <code>-R</code> is given)</li>
 				</ul>
 				If the data pool shall have mirroring, raid or other fancy
-				modes just hotplug the required disks andadapt the parameters to your needs.
-				Please keep in mind:
+				modes just hotplug the required disks and adapt the parameters to your needs.
 			</p>
 			<p>
+				Please keep in mind:<br>
 				<em>DO NOT</em> use <code>/dev/sd*</code> for the pool creation!
 			</p>
 			<p>
@@ -501,7 +546,18 @@ sudo zpool export rpool
 			<p>
 				After doing so your system will <em>not</em> boot completly.<br/>
 				Up to now it doesn't know that it has to import the new created data sets.
-				But it requires these sets. So you will reach the emergency state.
+				But it requires these sets.
+			</p>
+			<p>
+				I found two different behaviors:
+				<ul>
+					<li>You may reach the emergency state.</li>
+					<li>You might get the login of your regular installation</li>
+				</ul>
+				In both cases the system ist not yet working.
+			</p>
+			<p>
+				in the case that you get into the emergency mode:
 			</p>
 			<p>
 				Hit enter again to reach a command line.<br/>
@@ -512,10 +568,26 @@ exit
 </pre>
 				Now your system boots first time into the fresh installation.
 			</p>
+			<p>
+				In the case you get the login screen:
+			</p>
+			<p>
+				<em>DO NOT log in.</em><br>
+				Instead type &lt;ctrl&gt;-&lt;alt&gt;-&lt;F1&gt;<br>
+				Now you are in a textual login. Here you can log in.
+			</p>
+			<p>
+				Then type
+<pre>
+sudo zpool import tank0
+sudo reboot
+</pre>
+				Now your system should execute the reboot and you can log in.
+			</p>
 
 	<h1 id="configuration">System configuration</h1>
 		<p>
-			The initial system installation is deon now. There will be updates
+			The initial system installation is done now. There will be updates
 			available - these can either be installed first or last. The result
 			will be the same.
 		</p>
@@ -530,38 +602,22 @@ sudo apt install openssh-server
 			</p>
 			<p>
 				In the case you want to replace an old server it may make sense
-				to overtake the ssh keys from the old machine. To do so copy
-				the files <code>/etc/ssh/*key*</code> from the old machine to
-				the new one.
+				to overtake the ssh keys from the old machine.<br>
+				To do so copy the files <code>/etc/ssh/*key*</code> from the
+				old machine to the new one.
 			</p>
 
 		<h2>Small configuration issues</h2>
 			<p>
-				After the ubuntu installation process is finished we have a
-				clean installation waiting for further configuration. There is
-				one thing I do not like at all:<br/>
-				There are icons for rpool and bpool on the desktop I want to
-				get rid of.
-			</p>
-			<p>
-				To get rid of these icons we have to enter two lines in
-				<code>/etc/fstab</code><br/>
-				This file has to be editied with root rights. Just add the two
-				lines
-<pre>
-LABEL=rpool	none	auto	noauto	0	0
-LABEL=bpool	none	auto	noauto	0	0
-</pre>
-			</p>
-			<p>
 				One thing I really like is the possibility to use pageup /
 				pagedown for searching the history.<br/>
-				This can be enabled in <code>/etc/inputrc</code>
+				This can be enabled in <code>/etc/inputrc</code><br>
+				Just search for the lines and remove the hash.
 			</p>
 			<p>
-				As last little config issue I disable the bluetooth service. It
-				usually crashes during boot and I don't have a bluetooth device
-				connected to the server.
+				As last little config issue I disable the bluetooth service.<br>
+				It usually crashes during boot and I don't have a bluetooth
+				device connected to the server.
 <pre>
 sudo systemctl disable bluetooth
 </pre>
@@ -577,75 +633,54 @@ sudo systemctl disable bluetooth
 				suspend to disk.
 			</p>
 			<p>
-				To get supend, hibernate and a combination of both full
-				functional we just have to install one official ubuntu package:
-<pre>
-sudo apt install uswsusp
-</pre>
+				Ubuntu 22.04 has all required things installed to do suspend.<br>
+				To test it use <code>sudo systemctl suspend</code> and the system
+				should got in suspend to ram.
 			</p>
 			<p>
-				Having this package installed there is nothing to say against a
-				test of suspend to ram, disk or both.
+				To get hibernate working we have to modify the kernel command line
+				and modify the initramfs.
+			</p>
+			<ul>
+				<li>get the uuid of your swap partition<br>
+				easiest way: check directory <code>/dev/disk/by-uuid</code><br>
+				check for the link pointing to the second partition of your boot device</li>
+				<li>edit the file <code>/etc/default/grub</code><br>
+				add <code>resume=UUID=&lt;your_uuid&gt;</code><br>
+				to the tag <code>GRUB_CMDLINE_LINUX_DEFAULT</code></li>
+				<li>edit or create the file <code>/etc/initramfs-tools/conf.d/resume</code><br>
+				add the line <code>RESUME=UUID=&lt;your_uuid&gt;</code></li>
+				<li>execute <code>sudo update-grub</code></li>
+				<li>execute <code>sudo update-initramfs -u -k all</code></li>
+			</ul>
+			<p>
+				Now you can check hibernation.<br>
+				execute <code>sudo systemctl hibernate</code><br>
+				and your system should switch off.
 			</p>
 			<p>
-				To test suspend to RAM execute the command
-<pre>
-sudo s2ram
-</pre>
-			</p>
-			<p>
-				If everything is fine the system shuts down very fast.
-				At least my system wakes up with hitting any key on the
-				keyboard. Everything is fine if you don't get the regular login
-				but the screen saver password request.
-			</p>
-			<p>
-				Next try is suspend to disk. The command for doing that is
-<pre>
-sudo s2disk
-</pre>
-			</p>
-			<p>
-				In this case shuting down needs a bit more time and the system
-				prints additional information on the screen where the image is
-				stored and how large it is. On boot it takes the bios time,
-				then loads the image and again there should be the screensaver
-				password request. If you get the regular login screen something
-				went wrong.
-			</p>
-			<p>
-				Last test for me is testing if the combination suspend to RAM
-				and to disk is also working fine. The related command is
-<pre>
-sudo s2both
-</pre>
-			</p>
-			<p>
-				After this the shut down looks simular as in <code>s2disk</code>.
-				Shutting down needs the same time as in <code>s2disk</code>.
-				But as long as you don't pull the power cord the system will
-				start up in the same time as with <code>s2disk</code>.<br/>
-				<em>If</em> you pull the power cord and plug it again the system
-				will again recover in the same state where you called
-				<code>s2both</code>.
+				During next boot the kernel should report that it's recovering from your
+				swap partition.<br>
+				The screen should be locked and after logging in
+				the systen should have the same state as before hibernation.
 			</p>
 			<p>
 				To have this as a sensefull feature you have to setup your BIOS
-				in the way that after power loss the computer starts up. In most
-				cases the default for this setting is "keep it off".
+				in the way that after power loss the computer starts up.<br>
+				In most cases the default for this setting is "keep it off".
 			</p>
 
 		<h2>Configuration of Wake On Lan</h2>
 			<p>
 				As already explained in the prerequesites the Atheros AR8171 in
-				principle supports Wake On Lan, but it is completely disabled
-				in the ubuntu standard installation. So we're going to activate
-				it now.
+				principle supports Wake On Lan, but the related part of the driver
+				has been taken out of the kernel.<br>
+				This driver is build as module. Its name is <code>alx</code>.
 			</p>
 			<p>
-				First thing to do is to install ethtool:
+				First thing to do is to install ethtool, git and dkms:
 <pre>
-sudo apt install ethtool
+sudo apt install ethtool git dkms
 </pre>
 			</p>
 			<p>
@@ -661,38 +696,35 @@ ip link
 <pre>
 sudo ethtool enp2s0 | grep Wake-on
 </pre>
-				On my server hardware this reports:
-<pre>
-Supports Wake-on: d
-Wake-on: d
-</pre>
+				On my server hardware this report is empty.<br>
+				The original kernel driver doesn't support Wake On Lan.
 			</p>
 			<p>
 				This is sad, because this means: No Wake On Lan supported ...
 			</p>
 			<p>
-				<em>But:</em> the driver supports WOL, it just has to be
-				enabled. This is done by an additional kernel command line
-				parameter.
+				<em>But:</em> one can still use an old version of a driver to analyse
+				the code and take the parts required for wol and patch them into the
+				current driver.<br>
+				I did some analysis on the kernel driver source and found out that
+				there is no big change from kernel 5.15 to kernel 6.03. So I created
+				a dkms package to compile an alx driver with wol feature on each new
+				installed kernel.
 			</p>
 			<p>
-				To get WOL working on the Atheros AR8171 the kernel requires
-				the additional commandline paramter <code>alx.enable_wol=1</code>.
-				To add this parameter edit the file <code>/etc/default/grub</code>
-				with root rights. Here you find a line
+				This dkms package can be found here:<br>
+				<a href="https://github.com/AndiWeiss/alx-wol">dkms package for alx with wake on lan</a><br>
+				Best way to use it is to clone it and rund the installation script:
 <pre>
-GRUB_CMDLINE_LINUX_DEFAULT="&lt;some_parameters&gt;"
+git clone https://github.com/AndiWeiss/alx-wol.git
+cd alx-wol
+sudo ./install_alx-wol.sh
 </pre>
-				in this line add <code>alx.enable_wol=1</code> with  leading
-				blank in front of the second quotation mark. After doing that
-				execute the command
-<pre>
-sudo update-grub
-</pre>
-				to overtake the change.
 			</p>
 			<p>
-				Now execute a reboot, open a terminal and use the command
+				This script does the complete installation of the dkms and also
+				replaces the original module of the running system by the one
+				supporting wol. To check that use the command
 <pre>
 sudo ethtool enp2s0 | grep Wake-on
 </pre>
@@ -761,16 +793,16 @@ sudo apt install wakeonlan
 			</p>
 			<p>
 				To try if wake on lan is functional put your server to sleep
-				e.g. with <code>sudo s2ram</code>. Then, on the other machine,
-				use
+				e.g. with <code>sudo systemctl suspend</code>.<br>
+				Then, on the other machine, use
 <pre>
 wakeonlan 11:22:33:44:55:66
 </pre>
 				to wake it up again.
-				Take care to use the mac address of your server. Another thing
-				you need to know is that the magic packet used for waking up a
-				system is not routed over wifi, so you have to use a computer
-				connected to the lan.
+				Take care to use the mac address of your server.<br>
+				Another thing you need to know is that the magic packet used
+				for waking up a system is not routed over wifi, so you have
+				to use a computer connected to the lan.
 			</p>
 
 		<h2>exporting nfs shares</h2>
@@ -843,7 +875,8 @@ sudo mount server:/srv/music music
 			<p>
 				To detect how many nfs mounts are actually in use I use the
 				program netstat. This is included in the ubuntu package
-				net-tools, which is not installed as default. So we have to install it:
+				net-tools, which is not installed as default.<br>
+				So we have to install it:
 <pre>
 sudo apt install net-tools
 </pre>
@@ -917,7 +950,8 @@ users
 		<h2 id="reboot">Reboot if required</h2>
 			<p>
 				The update process creates a file <code>/var/run/reboot-required</code>
-				if a reboot is required. If this file is detected the server will - instead of
+				if a reboot is required.<br>
+				If this file is detected the server will - instead of
 				go to suspend - do a reboot.
 			</p>
 
@@ -948,7 +982,7 @@ rtcwake -m no -t `date --date='7 days 04:00' +%s`
 			These things have to be used for putting it all together.
 			We need to know if a user is actually logged in and if a share is
 			actually in use.<br/>
-			When this is not the case for a certain time the system shall shut down.
+			If this is not the case for a certain time the system shall shut down.
 		</p>
 		<p>
 			As this is time based we create a cron job for that.
@@ -978,8 +1012,9 @@ sudo mv autosuspend.sh /bin
 			With this the script is executed each minute and then checks
 			if the system shall stay active or not.
 		</p>
+		<p>
+			To check the autosuspend activities a log file
+			<code>/var/log/autosuspend.log</code> is created.
+		</p>
 </body>
 </html>
-<!--
-sudo apt install uswsusp ethtool nfs-kernel-server net-tools 
--->

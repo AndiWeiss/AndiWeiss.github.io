@@ -1,6 +1,7 @@
---- a/zsys-setup	2020-12-09 18:23:51.494450002 +0100
-+++ b/zsys-setup	2020-12-09 18:46:09.438848739 +0100
-@@ -500,7 +549,13 @@
+diff -upr orig/zsys-setup patched/zsys-setup
+--- orig/zsys-setup	2022-10-27 19:55:36.174035504 +0200
++++ patched/zsys-setup	2022-10-27 19:55:48.038193375 +0200
+@@ -519,7 +519,13 @@ EOF
  		swapoff "${SWAPFILE}"
  	fi
  	# Convert to MiB to align the size on the size of a block
