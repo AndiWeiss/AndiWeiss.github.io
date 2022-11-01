@@ -34,6 +34,12 @@
 				<li><a href="#first_boot">First boot of the fresh system</a></li>
 			</ul>
 			<li><a href="#configuration">System configuration</a></li>
+			<ul>
+				<li><a href="#small_issues">Small configuration issues</a></li>
+				<li><a href="#supend_hibernate_config">Configuration of suspend and hibernate</a></li>
+				<li><a href="#wol_config">Configuration of Wake On Lan</a></li>
+				<li><a href="#share_export">exporting nfs shares</a></li>
+			</ul>
 			<li><a href="#shutdown">Automatic shutdown</a></li>
 			<ul>
 				<li><a href="#nfs_detection">Detection of nfs mounts</a></li>
@@ -42,6 +48,10 @@
 				<li><a href="#reboot">Reboot if required</a></li>
 				<li><a href="#maintenance">Wake up for maintenance</a></li>
 				<li><a href="#all_together">Putting it together</a></li>
+			</ul>
+			<li><a href="#crash_recovery">Crash recovery</a></li>
+			<ul>
+				<li></li>
 			</ul>
 		</ul>
 	</nav>
@@ -573,7 +583,7 @@ exit
 			</p>
 			<p>
 				<em>DO NOT log in.</em><br>
-				Instead type &lt;ctrl&gt;-&lt;alt&gt;-&lt;F1&gt;<br>
+				Instead type &lt;ctrl&gt;-&lt;alt&gt;-&lt;F2&gt;<br>
 				Now you are in a textual login. Here you can log in.
 			</p>
 			<p>
@@ -607,7 +617,7 @@ sudo apt install openssh-server
 				old machine to the new one.
 			</p>
 
-		<h2>Small configuration issues</h2>
+		<h2 id="small_issues">Small configuration issues</h2>
 			<p>
 				One thing I really like is the possibility to use pageup /
 				pagedown for searching the history.<br/>
@@ -623,7 +633,7 @@ sudo systemctl disable bluetooth
 </pre>
 			</p>
 
-		<h2>Configuration of suspend and hibernate</h2>
+		<h2 id="supend_hibernate_config">Configuration of suspend and hibernate</h2>
 			<p>
 				Now the basics are done. We have a system booting from ZFS and
 				the desktop is clean.
@@ -670,7 +680,7 @@ sudo systemctl disable bluetooth
 				In most cases the default for this setting is "keep it off".
 			</p>
 
-		<h2>Configuration of Wake On Lan</h2>
+		<h2 id="wol_config">Configuration of Wake On Lan</h2>
 			<p>
 				As already explained in the prerequesites the Atheros AR8171 in
 				principle supports Wake On Lan, but the related part of the driver
@@ -805,7 +815,7 @@ wakeonlan 11:22:33:44:55:66
 				to use a computer connected to the lan.
 			</p>
 
-		<h2>exporting nfs shares</h2>
+		<h2 id="share_export">exporting nfs shares</h2>
 			<p>
 				Now we have a system providing the basic system features.
 				Now the server featurs have to be activated.
@@ -1016,5 +1026,49 @@ sudo mv autosuspend.sh /bin
 			To check the autosuspend activities a log file
 			<code>/var/log/autosuspend.log</code> is created.
 		</p>
+
+	<h1 id="crash_recovery">Crash recovery</h1>
+		<p>
+			The best server is senseless if there is no possibility to do crash recovery.
+		</p>
+		<p>
+			I see the following things which have to be easy and fast recoverable:
+			<ul>
+				<li>crash of the boot system<br>
+				The boot system is without raid or comparable things. Therefore
+				the likelyhood for a data loss is higher than on the data tank.</li>
+				<li>crash of one tank0 disc<br>
+				I personally use a zfs raidz for my tank0. So as long as only one
+				drive fails all the data is still available. But I need to know in
+				advance what to do in the case that a drive crashes.</li>
+			</ul>
+		</p>
+
+	<h2 id="crashed_boot_system">Recovery of a crashed boot system</h1>
+		<p>
+			I decided to define the way of setting up a fresh system in the case that
+			the boot system crashes. I completely separated the server data and user
+			data from the boot system so I only need to be sure that there is an easy and
+			fast possibility to get a clean system working with the still existing tank0.
+		</p>
+		<p>
+			This method is rather simple:
+			<ul>
+				<li>disconnect all tank0 drives from the server</li>
+				<li>do a plain zfs installation on the new boot device<br>
+				For this just follow the description above</li>
+				<li>Instead of creating a new data pool only destroy the parts
+				on the fresh installation</li>
+				<li>follow the 'first boot' instructions</li>
+				<li>now install the backup of your configuration<br>
+				I hope you have that backup :-)</li>
+			</ul>
+		</p>
+
+	<h2 id="crashed_tank_hdd">Recovery of a crashed tank0 hard disc</h1>
+		<p>up to now not collected. Follow the standard zfs recovery documentation.</p>
 </body>
 </html>
+
+<!-- wget https://AndiWeiss.github.io/projects/serverinstall/install_base.sh -->
+<!-- wget https://AndiWeiss.github.io/projects/serverinstall/install_final.sh -->
