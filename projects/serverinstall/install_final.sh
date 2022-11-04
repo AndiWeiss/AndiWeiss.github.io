@@ -1,5 +1,7 @@
 #!/bin/bash
 
+packages_to_install="geany gnome-system-tools openssh-server ethtool git dkms nfs-kernel-server net-tools"
+
 function install_package ()
 {
 	package="$1"
@@ -23,8 +25,14 @@ function install_package ()
 	fi
 }
 
+if [ "`whoami`" != "root" ];
+then
+	echo "this script has to be executed as root"
+	exit 1
+fi
+
 echo "get newest version of system"
-apt-get update
+apt-get update --assume-yes
 if [ $? -ne 0 ];
 then
 	echo "apt-get update failed!"
@@ -38,8 +46,13 @@ then
 	exit 1
 fi
 
-install_package "geany"
-install_package "gnome-system-tools"
+echo "installing all required packages ..."
+apt-get install --assume-yes ${packages_to_install}
+if [ $? -ne 0 ];
+then
+	echo "packet installation failed!"
+	exit 1
+fi
 
 echo -n "check if inputrc already patched ..."
 grep '# \"\\e\[\([56]\)~\": history-search-' /etc/inputrc > /dev/null
@@ -54,20 +67,11 @@ else
 	echo "yes"
 fi
 
-echo -n "check if openssh-server already installed ... "
-install_package openssh-server
-if [ $? -eq 1 ];
-then
-	echo "copy backup keys on server ..."
-	cp -p /root/backup/initial/etc/ssh/*key* /etc/ssh
-	echo "openssh-server including keys initiated."
-fi
-
 echo -n "checking if bluetooth is enabled ... "
 if [ "`systemctl is-enabled bluetooth`" == "enabled" ];
 then
-	echo "yes"
-	echo "disabling bluetooth"
+	echo "yes "
+	echo "disable bluetooth"
 	systemctl disable bluetooth
 else
 	echo "no"
@@ -116,31 +120,6 @@ else
 	echo "RESUME=UUID=${swapuuid}" > ${file}
 	do_grubupdate=1
 fi
-
-if [ ${do_grubupdate} -ne 0 ];
-then
-	echo "grub update is required"
-	update-grub
-	if [ $? -ne 0 ];
-	then
-		echo "update-grub failed!"
-		exit 1
-	else
-		echo "update-grub succeeded"
-	fi
-	update-initramfs -u -k all
-	if [ $? -ne 0 ];
-	then
-		echo "update-initramfs failed!"
-		exit 1
-	else
-		echo "update-initramfs succeeded"
-	fi
-fi
-
-install_package "ethtool"
-install_package "git"
-install_package "dkms"
 
 ethdev="`ip link | grep BROADCAST | sed -n 's|^[0-9]: *\([^:]*\):.*$|\1|g;p'`"
 echo -n "checking if wake on lan is supported ... "
@@ -218,8 +197,39 @@ else
 	echo "yes"
 fi
 
-install_package "nfs-kernel-server"
-install_package "net-tools"
+echo
+echo "base installation finished"
+echo "now restoring backup ..."
+orig="`pwd`"
+cd /root/backup/initial
+files="`find . -type f`"
+for  file in ${files};
+do
+	cp -p ${file} /${file}
+	if [ $? -ne 0 ];
+	then
+		echo "restoring \"${file}\" failed"
+	fi
+done
+
+echo
+echo "update-grub and update-initramfs ..."
+update-grub
+if [ $? -ne 0 ];
+then
+	echo "update-grub failed!"
+	exit 1
+else
+	echo "update-grub succeeded"
+fi
+update-initramfs -u -k all
+if [ $? -ne 0 ];
+then
+	echo "update-initramfs failed!"
+	exit 1
+else
+	echo "update-initramfs succeeded"
+fi
 
 echo -n "checking if autosuspend.sh already available ... "
 if [ -f "/bin/autosuspend.sh" ];
@@ -250,4 +260,3 @@ then
 else
 	echo "yes"
 fi
-

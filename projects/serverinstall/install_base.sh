@@ -372,6 +372,10 @@ then
 		cd "${orig}"
 	done
 
+	zpool set cachefile= tank0
+	touch /target/etc/zfs/zfs-list.cache/tank0
+	zfs set sync=standard tank0
+
 	echo "copy initial data to tank0 finished"
 else
 	echo "tank0 shall not be initialized"
@@ -408,7 +412,8 @@ echo "exporting zpools"
 
 poolexport_failed=0
 
-if [ $init_pool -eq 1 ];
+zpool list tank0 >& /dev/null
+if [ $? -eq 0 ];
 then
 	zpool export tank0
 	if [ $? -ne 0 ];
@@ -418,18 +423,26 @@ then
 	fi
 fi
 
-zpool export bpool
-if [ $? -ne 0 ];
+zpool list bpool >& /dev/null
+if [ $? -eq 0 ];
 then
-	echo "export of bpool failed" 1>&2
-	poolexport_failed=1
+	zpool export bpool
+	if [ $? -ne 0 ];
+	then
+		echo "export of bpool failed" 1>&2
+		poolexport_failed=1
+	fi
 fi
 
-zpool export rpool
-if [ $? -ne 0 ];
+zpool list rpool >& /dev/null
+if [ $? -eq 0 ];
 then
-	echo "export of rpool failed" 1>&2
-	poolexport_failed=1
+	zpool export rpool
+	if [ $? -ne 0 ];
+	then
+		echo "export of rpool failed" 1>&2
+		poolexport_failed=1
+	fi
 fi
 
 if [ $poolexport_failed -ne 0 ];

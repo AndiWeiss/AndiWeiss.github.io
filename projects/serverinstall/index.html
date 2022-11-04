@@ -29,8 +29,7 @@
 			<li><a href="#installation">Installation process</a></li>
 			<ul>
 				<li><a href="#additional_hdds">Initialisation of the data pool</a></li>
-				<li><a href="#moving_userdata">Moving USERDATA</a></li>
-				<li><a href="#moving_serverdata">Moving other datasets</a></li>
+				<li><a href="#moving_data">Moving data</a></li>
 				<li><a href="#first_boot">First boot of the fresh system</a></li>
 			</ul>
 			<li><a href="#configuration">System configuration</a></li>
@@ -418,24 +417,26 @@ sudo zpool create -f \
 	-O canmount=off \
 	-O dnodesize=auto \
 	-O sync=disabled \
+	-R /tank0 \
 	tank0 /dev/disk/by-id/&lt;your_id_here&gt;
 </pre>
 				Checking this against the creation of <code>rpool</code> you'll see only
 				two differences:
 				<ul>
 					<li>the mount point is set to <code>none</code></li>
-					<li>no alternative mount point is defined (no <code>-R</code> is given)</li>
+					<li>the alternative mount point is set to <code>/tank0</code></li>
 				</ul>
 				If the data pool shall have mirroring, raid or other fancy
 				modes just hotplug the required disks and adapt the parameters to your needs.
 			</p>
 			<p>
 				Please keep in mind:<br>
-				<em>DO NOT</em> use <code>/dev/sd*</code> for the pool creation!
+				<em>DO NOT</em> use <code>/dev/sd*</code> for the pool creation!<br>
 			</p>
 			<p>
 				Check the entries in <code>/dev/disk/by-id/</code> for the drives you
-				want to use and use these links instead.
+				want to use and use these links instead. I personally use the
+				<code>wwn-*</code> entries.
 			</p>
 			<p>
 				By handing over the whole device zpool will first create a gpt partition
@@ -444,91 +445,129 @@ sudo zpool create -f \
 				combine drives with small differences in the amount of sectors to one pool.
 				The large partition is used for zfs afterwards.
 			</p>
-		<h2 id="moving_userdata">Moving USERDATA</h2>
+		<h2 id="moving_data">Moving data</h2>
 			<p>
-				Third step is moving the initial user dataset. To do so we create a
-				snapshot of the base installed user data set and move this to
-				the new data pool.
-<pre>
-sudo zfs snapshot -r rpool/USERDATA@move
-sudo zfs send -R rpool/USERDATA@move | sudo zfs receive tank0/USERDATA
-</pre>
-				Now the snapshot is available on the additional pool. This snapshot contains
-				all properties of the original dataset. Parts of the properties are required
-				to have the regular ubuntu zfs mechanisms working.
+				In earlier versions of this howto I moved the fresh installed data
+				using <code>zfs send ... | zfs receive ...</code><br>
+				I changed this to creation of self defined datasets on the tank plus
+				data copy with complete file system features.
 			</p>
 			<p>
-				Now the original data set and the new snapshot can be destroyed:
-<pre>
-sudo zfs destroy -r rpool/USERDATA
-sudo zfs destroy -r tank0/USERDATA@move
-</pre>
-				If you only want to use the user data on the data tank you're done with the
-				data movement. If you want to have server data follow the next steps and add more
-				dependent on your requirements.
-			</p>
-		<h2 id="moving_serverdata">Moving other datasets</h2>
-			<p>
-				I want to have <code>/srv</code> and <code>/var/www</code>
-				on my data tank.
+				Reason for this is again the buggy zsys. On Ubuntu 20.04 that system
+				worked - as far as I know - pretty nice.
 			</p>
 			<p>
-				Fourth step: moving /srv on the data tank. Comparable procedure as with the
-				user data, but here the installation process uses an id in the created data sets.
-				So take care to replace &lt;ID&gt; by the id used in your instalation process.
-				You can read it with <code>zfs list</code>
-<pre>
-export MyId=`zfs list | grep ROOT/ubuntu_.*/target\$ | sed -n 's|[^_]*_\(\w*\).*|\1|g;p'`
-sudo zfs snapshot -r rpool/ROOT/ubuntu_${MyId}/srv@move
-sudo zfs send -R rpool/ROOT/ubuntu_${MyId}/srv@move | sudo zfs receive tank0/srv
-sudo zfs destroy -r rpool/ROOT/ubuntu_${MyId}/srv
-sudo zfs destroy -r tank0/srv@move
-</pre>
-				As the mountpoint in the original dataset is inherited from the upper dataset
-				we have to set the correct mountpoint here:
-<pre>
-sudo zfs set mountpoint=/srv tank0/srv
-</pre>
+				So now copying the user data is a combination of data set creation and
+				data copy. First the required datasets have to be created and then the
+				data has to be copied.
 			</p>
 			<p>
-				Fifth step: As mentioned I also want to get <code>/var/www</code> on the tank.
-				There is only one difference to moving the <code>/srv</code>: I want to create
-				<code>/var</code> first and then put <code>/var/www</code> on top. Just for having
-				a better overview.
+				I want to move these directories on the tank:
+				<ul>
+					<li>/root</li>
+					<li>/home/&lt;initial_user&gt;</li>
+					<li>/srv</li>
+					<li>/var/www</li>
+					<li>/var/log</li>
+				</ul>
 			</p>
-			<p>
-				So this is the command list for doing so:
-<pre>
-sudo zfs snapshot -r rpool/ROOT/ubuntu_${MyId}/var/www@move
-sudo zfs create tank0/var -o canmount=off -o mountpoint=none
-sudo zfs send -R rpool/ROOT/ubuntu_${MyId}/var/www@move | sudo zfs receive tank0/var/www
-sudo zfs destroy -r rpool/ROOT/ubuntu_${MyId}/var/www
-sudo zfs destroy -r tank0/var/www@move
-sudo zfs set mountpoint=/var/www tank0/var/www
-</pre>
-			</p>
-			<p>
-				Several of the zfs properties are now set to source
-				<code>received</code> instead of the usual
-				<code>local</code>.
-				This leads to none functional revert mechanism. If a
-				revert is executed none of the datasetes having this
-				source will be mounted. That's not good at all.
-			</p>
-			<p>
-				To fix that I use a bash command line to set each
-				property which has the source <code>received</code>
-				on the value it has. Setting the property is done with
-				<code>sudo zfs get &lt;some_parameters&gt;</code>. But
-				as I don't want to do that by hand for each property
-				this is the line to do it automatically in bash:
-<pre>
-zfs get all -r tank0 | grep received\$ | \
-while read -r ds prop val drop;\
-	do sudo zfs set ${prop}=${val} ${ds}; \
-done
-</pre>
-			</p>
+			<h3 id="dataset_creation>">Dataset creation</h3>
+				<p>
+					We start with the directory <code>/root</code>.<br>
+					<ul>
+						<li>create the dataset:<br>
+						<code>sudo create_ds tank0/root /root</code></li>
+						<li>overtake the owner from the original directory:<br>
+						<code>sudo chown --reference=/target/root /tank0/root</code></li>
+						<li>overtake the mode of the original directory:<br>
+						<code>sudo chmod --reference=/target/root /tank0/root</code></li>
+						<li>copy the data:<br>
+						<code>sudo -- sh -c "ds=root; \</code><br>
+						<code>for d in `find /target/${ds} -mindepth 1 -maxdepth 1`; \</code><br>
+						<code>do \</code><br>
+						<code>	cp -pr ${d} /tank0/${ds} \</code><br>
+						<code>done"</code>
+						</li>
+					</ul>
+				</p>
+
+				<p>
+					Next is the home directory of the initial user. Having in mind that
+					there will be more than one user in the future we have to create a
+					dataset for <code>/home</code> and then one dataset for each user
+					as <code>/home/&lt;user&gt;</code>
+					<ul>
+						<li>create the dataset:<br>
+						<code>sudo create_ds tank0/home /home</code></li>
+						<li>overtake the owner from the original directory:<br>
+						<code>sudo chown --reference=/target/home /tank0/home</code></li>
+						<li>overtake the mode of the original directory:<br>
+						<code>sudo chmod --reference=/target/home /tank0/home</code></li>
+					</ul>
+					Now create the dataset for the initial user and copy the data
+					<ul>
+						<li>create the dataset:<br>
+						<code>sudo create_ds tank0/home/user /home/user</code></li>
+						<li>overtake the owner from the original directory:<br>
+						<code>sudo chown --reference=/target/home/user /tank0/home/user</code></li>
+						<li>overtake the mode of the original directory:<br>
+						<code>sudo chmod --reference=/target/home/user /tank0/home/user</code></li>
+						<li>copy the data:<br>
+						<code>sudo -- sh -c "ds=home/user; \</code><br>
+						<code>for d in `find /target/${ds} -mindepth 1 -maxdepth 1`; \</code><br>
+						<code>do \</code><br>
+						<code>	cp -pr ${d} /tank0/${ds} \</code><br>
+						<code>done"</code>
+						</li>
+					</ul>
+				</p>
+				<p>
+					<em>Caution!</em><br>
+					You have to keep in mind that without zsys there will be NO automatic dataset
+					creation on creating a new user.<br>
+					My recommendation is to <em>first</em> create the users data set including
+					owner and mode settings and <em>then</em> create the user.<br>
+					If the user shall be created with the standard user template
+					all files out of <code>/etc/skel</code> have to be copied into the new
+					users home directory.<br>
+				</p>
+
+				<p>
+					Moving <code>/srv</code> is done in the same way than <code>/root</code>.
+				</p>
+				<p>
+					Moving the folders inside <code>/var</code> is a bit more complicate.<br>
+					Here we first have to create a dataset <code>/var</code> whithout any mount feature.<br>
+					Then we can crate the datasets in the same way as <code>/home/user</code>.
+					<ul>
+						<li>create dataset for <code>/var</code>:<br>
+						<code>sudo zfs create -o canmount=off -o mountpoint=none tank0/var</code></li>
+						<li>continue with the <code>/var/* for each required directory<br>
+						in the same way as <code>/home/user</code></code></li>
+					</ul>
+				</p>
+
+			<h3 id="dataset_destroction>">Dataset destruction</h3>
+
+				<p>
+					As now all future user and server data is located on the new
+					tank the original datasets for these have to be destroyed.
+				</p>
+				<p>
+					Ubuntus installation process uses an id in the dataset name.<br>
+					We read this id:<br>
+					<code>export MyId=`zfs list | grep ROOT/ubuntu_.*/target\$ | sed -n 's|[^_]*_\(\w*\).*|\1|g;p'`</code>
+				</p>
+				<p>
+					now we destroy all datasets we copied on the tank:
+					<ul>
+						<li><code>sudo zfs destroy -r rpool/USERDATA</code></li>
+						<li><code>sudo zfs destroy -r rpool/ROOT/ubuntu_${MyId}/srv</code></li>
+						<li><code>sudo zfs destroy -r rpool/ROOT/ubuntu_${MyId}/var/www</code></li>
+						<li><code>sudo zfs destroy -r rpool/ROOT/ubuntu_${MyId}/var/log</code></li>
+					</ul>
+				</p>
+
 			<p>
 				Now we have to introduce the new pool to the system as bpool and rpool are.<br/>
 <pre>
