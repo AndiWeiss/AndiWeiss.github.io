@@ -84,7 +84,7 @@ else
 fi
 
 # get lines of NFS mounts
-nfsmounters_ips=`netstat -n --inet | grep ':2049\W' | sed -n 's|.*:2049\W*\([^:]*\):.*|\1|g;p'`
+nfsmounters_ips=`ss -n --inet | grep ':2049\W' | sed -n 's|.*]:2049[^[]*\[\([^]]*\).*$|\1|g;p'`
 
 # initialize with 'switch off'
 keepalive=0

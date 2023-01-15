@@ -923,17 +923,17 @@ sudo mount server:/srv/music music
 		<h2 id="nfs_detection">Detection of nfs mounts</h2>
 			<p>
 				To detect how many nfs mounts are actually in use I use the
-				program netstat. This is included in the ubuntu package
-				net-tools, which is not installed as default.<br>
+				program ss. This is included in the ubuntu package
+				iproute2, which is not installed as default.<br>
 				So we have to install it:
 <pre>
-sudo apt install net-tools
+sudo apt install iproute2
 </pre>
 			</p>
 			<p>
 				To get a list of active nfs connections I use
 <pre>
-netstat -n --inet
+ss -n --inet
 </pre>
 				I use the <code>-n</code> to get numeric output. Otherwise there has
 				to be a functional nameserver in your network. Additionally we need
@@ -947,14 +947,14 @@ netstat -n --inet
 				Taking a look into <code>/etc/services</code> we find the ports used for
 				nfs. This is 2049. With this I use
 <pre>
-netstat -n --inet | grep ':2049\W'
+ss -n --inet | grep ':2049\W'
 </pre>
 				to get only the lines with active nfs connections.
 			</p>
 			<p>
 				During my tries I found an issue for generic usage:<br/>
 				If the system using the share doesn't unmount the share it can happen that
-				netstat detects the link active for a long time. So we also have to check if
+				ss detects the link active for a long time. So we also have to check if
 				the system with the actual link is still alive.
 			</p>
 			<p>
@@ -969,9 +969,9 @@ netstat -n --inet | grep ':2049\W'
 			</p>
 			<p>
 				To be able to ping the system we need its ip address.
-				To get this we use the output of the found line of netstat and kill everything but the ip address:
+				To get this we use the output of the found line of ss and kill everything but the ip address:
 <pre>
-netstat -n --inet | grep ':2049\W' | sed -n 's|.*:2049\W*\([^:]*\):.*|\1|g;p'
+ss -n --inet | grep ':2049\W' | sed -n 's|.*]:2049[^[]*\[\([^]]*\).*$|\1|g;p'
 </pre>
 			</p>
 
